@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { generarDescripcionPanorama, moderarContenido, type ModeracionResult } from '@/services/openai'
 import {
   Users, ChevronLeft, Send, Sparkles, AlertTriangle, CheckCircle,
-  Loader2, MapPin, Calendar, DollarSign, UserCircle, Wand2, Eye,
+  Loader2, MapPin, Calendar, DollarSign, UserCircle, Wand2,
   LayoutDashboard
 } from 'lucide-react'
 

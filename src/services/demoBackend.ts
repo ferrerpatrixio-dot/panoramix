@@ -256,7 +256,7 @@ export function demoEliminarPanorama(id: string) {
 }
 
 // Generar matches simulados para demo
-function generarMatchesSimulados(data: any): DemoMatch[] {
+function generarMatchesSimulados(_data: any): DemoMatch[] {
   const nombres = ['Carla', 'Diego', 'Valentina', 'Andrés', 'Francisca', 'Javier', 'Camila', 'Rodrigo']
   const numMatches = Math.floor(Math.random() * 3) + 1 // 1-3 matches
   const shuffled = nombres.sort(() => Math.random() - 0.5)
