@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -6,31 +6,59 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Users, ChevronLeft, Save, Star, Wine, Cigarette, HeartPulse,
-  MessageCircle, Volume2, Ear, Activity, ShieldCheck
+  MessageCircle, Volume2, Ear, Activity, ShieldCheck, Dumbbell, Landmark, Church
 } from 'lucide-react'
+
+const STORAGE_KEY = 'panoramix_perfil_profundo'
+
+interface PerfilProfundoData {
+  tragoFavorito: string
+  marcaCigarro: string
+  estadoAnimo: string
+  momentoReciente: string
+  energiaSocial: string
+  rolConversacion: string
+  inquietoPasivo: string
+  temasGusta: string[]
+  temasNoGusta: string[]
+  temaFavorito: string
+  temaTabu: string
+  deporteHaceConversa: string
+  conversaReligionPolitica: string
+  completado: boolean
+}
+
+function loadData(): PerfilProfundoData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (raw) return JSON.parse(raw)
+  } catch {}
+  return {
+    tragoFavorito: '', marcaCigarro: '', estadoAnimo: '', momentoReciente: '',
+    energiaSocial: '', rolConversacion: '', inquietoPasivo: '',
+    temasGusta: [], temasNoGusta: [], temaFavorito: '', temaTabu: '',
+    deporteHaceConversa: '', conversaReligionPolitica: '', completado: false
+  }
+}
+
+function saveData(data: PerfilProfundoData) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
+}
 
 export default function PerfilProfundo() {
   const [paso, setPaso] = useState(1)
   const [guardado, setGuardado] = useState(false)
 
-  // Bloque A: Hábitos (discretos)
-  const [tragoFavorito, setTragoFavorito] = useState('')
-  const [marcaCigarro, setMarcaCigarro] = useState('')
+  const [data, setData] = useState<PerfilProfundoData>(loadData)
 
-  // Bloque B: Estado emocional
-  const [estadoAnimo, setEstadoAnimo] = useState('')
-  const [momentoReciente, setMomentoReciente] = useState('')
+  // Guardar automáticamente en cada cambio
+  useEffect(() => {
+    saveData(data)
+  }, [data])
 
-  // Bloque C: Dinámica social
-  const [energiaSocial, setEnergiaSocial] = useState('')
-  const [rolConversacion, setRolConversacion] = useState('')
-  const [inquietoPasivo, setInquietoPasivo] = useState('')
-
-  // Bloque D: Temas de conversación
-  const [temasGusta, setTemasGusta] = useState<string[]>([])
-  const [temasNoGusta, setTemasNoGusta] = useState<string[]>([])
-  const [temaFavorito, setTemaFavorito] = useState('')
-  const [temaTabu, setTemaTabu] = useState('')
+  const update = <K extends keyof PerfilProfundoData>(key: K, value: PerfilProfundoData[K]) => {
+    setData(prev => ({ ...prev, [key]: value }))
+  }
 
   const totalPasos = 4
 
@@ -82,18 +110,35 @@ export default function PerfilProfundo() {
   ]
 
   const toggleTema = (tema: string, tipo: 'gusta' | 'nogusta') => {
-    if (tipo === 'gusta') {
-      setTemasGusta(prev => prev.includes(tema) ? prev.filter(x => x !== tema) : [...prev, tema])
-      setTemasNoGusta(prev => prev.filter(x => x !== tema))
-    } else {
-      setTemasNoGusta(prev => prev.includes(tema) ? prev.filter(x => x !== tema) : [...prev, tema])
-      setTemasGusta(prev => prev.filter(x => x !== tema))
-    }
+    setData(prev => {
+      if (tipo === 'gusta') {
+        const next = prev.temasGusta.includes(tema)
+          ? prev.temasGusta.filter(x => x !== tema)
+          : [...prev.temasGusta, tema]
+        return { ...prev, temasGusta: next, temasNoGusta: prev.temasNoGusta.filter(x => x !== tema) }
+      } else {
+        const next = prev.temasNoGusta.includes(tema)
+          ? prev.temasNoGusta.filter(x => x !== tema)
+          : [...prev.temasNoGusta, tema]
+        return { ...prev, temasNoGusta: next, temasGusta: prev.temasGusta.filter(x => x !== tema) }
+      }
+    })
   }
 
   const handleGuardar = () => {
+    setData(prev => ({ ...prev, completado: true }))
     setGuardado(true)
     setTimeout(() => setGuardado(false), 3000)
+  }
+
+  const porcentajeCompletado = () => {
+    const checks = [
+      data.tragoFavorito, data.marcaCigarro, data.estadoAnimo,
+      data.inquietoPasivo, data.rolConversacion, data.energiaSocial,
+      data.deporteHaceConversa, data.conversaReligionPolitica
+    ]
+    const filled = checks.filter(Boolean).length
+    return Math.round((filled / checks.length) * 100)
   }
 
   return (
@@ -135,7 +180,10 @@ export default function PerfilProfundo() {
               }`} />
             ))}
           </div>
-          <p className="text-xs text-slate-400 mt-1">Paso {paso} de {totalPasos}</p>
+          <div className="flex items-center justify-between mt-1">
+            <p className="text-xs text-slate-400">Paso {paso} de {totalPasos}</p>
+            <p className="text-xs text-teal-600 font-medium">{porcentajeCompletado()}% completado</p>
+          </div>
         </div>
 
         {guardado && (
@@ -172,9 +220,9 @@ export default function PerfilProfundo() {
                     {tragos.map(t => (
                       <button
                         key={t.id}
-                        onClick={() => setTragoFavorito(t.id)}
+                        onClick={() => update('tragoFavorito', t.id)}
                         className={`w-full p-3 rounded-lg border text-sm transition text-left ${
-                          tragoFavorito === t.id
+                          data.tragoFavorito === t.id
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -183,9 +231,9 @@ export default function PerfilProfundo() {
                       </button>
                     ))}
                   </div>
-                  {tragoFavorito && (
+                  {data.tragoFavorito && (
                     <p className="text-xs text-slate-400 mt-2">
-                      Tipo detectado: <span className="font-medium text-slate-600">{tragos.find(t => t.id === tragoFavorito)?.tipo}</span>
+                      Tipo detectado: <span className="font-medium text-slate-600">{tragos.find(t => t.id === data.tragoFavorito)?.tipo}</span>
                     </p>
                   )}
                 </div>
@@ -202,9 +250,9 @@ export default function PerfilProfundo() {
                     {marcasCigarro.map(m => (
                       <button
                         key={m.id}
-                        onClick={() => setMarcaCigarro(m.id)}
+                        onClick={() => update('marcaCigarro', m.id)}
                         className={`w-full p-3 rounded-lg border text-sm transition text-left ${
-                          marcaCigarro === m.id
+                          data.marcaCigarro === m.id
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -213,9 +261,9 @@ export default function PerfilProfundo() {
                       </button>
                     ))}
                   </div>
-                  {marcaCigarro && (
+                  {data.marcaCigarro && (
                     <p className="text-xs text-slate-400 mt-2">
-                      Perfil: <span className="font-medium text-slate-600">{marcasCigarro.find(m => m.id === marcaCigarro)?.tipo.replace('_', ' ')}</span>
+                      Perfil: <span className="font-medium text-slate-600">{marcasCigarro.find(m => m.id === data.marcaCigarro)?.tipo.replace('_', ' ')}</span>
                     </p>
                   )}
                 </div>
@@ -246,9 +294,9 @@ export default function PerfilProfundo() {
                     {estadosAnimo.map(e => (
                       <button
                         key={e.id}
-                        onClick={() => setEstadoAnimo(e.id)}
+                        onClick={() => update('estadoAnimo', e.id)}
                         className={`w-full p-3 rounded-lg border text-sm transition text-left flex items-center gap-3 ${
-                          estadoAnimo === e.id
+                          data.estadoAnimo === e.id
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -269,8 +317,8 @@ export default function PerfilProfundo() {
                   </p>
                   <Textarea
                     placeholder="Ej: Me gradué de la universidad y estoy muy emocionado por empezar una nueva etapa... / Perdí a mi mascota después de 12 años y ha sido difícil..."
-                    value={momentoReciente}
-                    onChange={e => setMomentoReciente(e.target.value)}
+                    value={data.momentoReciente}
+                    onChange={e => update('momentoReciente', e.target.value)}
                   />
                 </div>
               </CardContent>
@@ -299,9 +347,9 @@ export default function PerfilProfundo() {
                     {energias.map(e => (
                       <button
                         key={e.id}
-                        onClick={() => setInquietoPasivo(e.id)}
+                        onClick={() => update('inquietoPasivo', e.id)}
                         className={`w-full p-3 rounded-lg border text-sm transition text-left ${
-                          inquietoPasivo === e.id
+                          data.inquietoPasivo === e.id
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -324,9 +372,9 @@ export default function PerfilProfundo() {
                     {rolesConversacion.map(r => (
                       <button
                         key={r.id}
-                        onClick={() => setRolConversacion(r.id)}
+                        onClick={() => update('rolConversacion', r.id)}
                         className={`p-3 rounded-lg border text-sm transition text-left flex items-center gap-2 ${
-                          rolConversacion === r.id
+                          data.rolConversacion === r.id
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
@@ -346,14 +394,75 @@ export default function PerfilProfundo() {
                     {['Muy social — conozco gente nueva fácil', 'Social moderado — depende del ambiente', 'Reservado/a — cuesta abrirme al principio', 'Introvertido/a — prefiero pocos y buenos'].map(o => (
                       <button
                         key={o}
-                        onClick={() => setEnergiaSocial(o)}
+                        onClick={() => update('energiaSocial', o)}
                         className={`p-3 rounded-lg border text-sm transition text-left ${
-                          energiaSocial === o
+                          data.energiaSocial === o
                             ? 'border-teal-500 bg-teal-50 text-teal-700'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
                         {o}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-5">
+                  <label className="font-medium text-slate-900 block mb-2 flex items-center gap-2">
+                    <Dumbbell className="w-4 h-4 text-orange-500" />
+                    ¿Haces deporte o solo conversas de deporte?
+                  </label>
+                  <p className="text-xs text-slate-400 mb-3">
+                    Si no te interesa el deporte, también es válido. Solo queremos saber para emparejarte con alguien compatible.
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'hago', label: 'Hago deporte regularmente (gym, running, fútbol, etc.)' },
+                      { id: 'converso', label: 'No hago, pero me gusta conversar de deportes' },
+                      { id: 'veo', label: 'Solo veo eventos deportivos por TV o en vivo' },
+                      { id: 'nada', label: 'No me interesa el deporte ni hacerlo ni hablarlo' },
+                    ].map(o => (
+                      <button
+                        key={o.id}
+                        onClick={() => update('deporteHaceConversa', o.id)}
+                        className={`w-full p-3 rounded-lg border text-sm transition text-left ${
+                          data.deporteHaceConversa === o.id
+                            ? 'border-teal-500 bg-teal-50 text-teal-700'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t pt-5">
+                  <label className="font-medium text-slate-900 block mb-2 flex items-center gap-2">
+                    <Landmark className="w-4 h-4 text-blue-500" />
+                    ¿Te gusta conversar de política o religión?
+                  </label>
+                  <p className="text-xs text-slate-400 mb-3">
+                    No preguntamos de qué religion o partido eres. Solo si te gusta conversar de estos temas.
+                  </p>
+                  <div className="space-y-2">
+                    {[
+                      { id: 'si_ambos', label: 'Sí, me gusta conversar de ambos temas' },
+                      { id: 'si_politica', label: 'Solo política, religión es privado' },
+                      { id: 'si_religion', label: 'Solo religión, política me estresa' },
+                      { id: 'ninguno', label: 'Prefiero no tocar ninguno de los dos' },
+                      { id: 'depende', label: 'Depende de la persona y el momento' },
+                    ].map(o => (
+                      <button
+                        key={o.id}
+                        onClick={() => update('conversaReligionPolitica', o.id)}
+                        className={`w-full p-3 rounded-lg border text-sm transition text-left ${
+                          data.conversaReligionPolitica === o.id
+                            ? 'border-teal-500 bg-teal-50 text-teal-700'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {o.label}
                       </button>
                     ))}
                   </div>
@@ -382,8 +491,8 @@ export default function PerfilProfundo() {
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {temasOpciones.map(tema => {
-                      const esGusta = temasGusta.includes(tema)
-                      const esNoGusta = temasNoGusta.includes(tema)
+                      const esGusta = data.temasGusta.includes(tema)
+                      const esNoGusta = data.temasNoGusta.includes(tema)
                       return (
                         <div key={tema} className="flex items-center gap-1">
                           <button
@@ -425,8 +534,8 @@ export default function PerfilProfundo() {
                   </label>
                   <Textarea
                     placeholder="Ej: Podría hablar horas de música chilena de los 90, o de rutas de trekking en el Cajón del Maipo..."
-                    value={temaFavorito}
-                    onChange={e => setTemaFavorito(e.target.value)}
+                    value={data.temaFavorito}
+                    onChange={e => update('temaFavorito', e.target.value)}
                   />
                 </div>
 
@@ -436,27 +545,27 @@ export default function PerfilProfundo() {
                   </label>
                   <Textarea
                     placeholder="Ej: Prefiero no hablar de política o religión hasta conocer mejor a la persona..."
-                    value={temaTabu}
-                    onChange={e => setTemaTabu(e.target.value)}
+                    value={data.temaTabu}
+                    onChange={e => update('temaTabu', e.target.value)}
                   />
                 </div>
 
                 {/* Resumen visual */}
-                {(temasGusta.length > 0 || temasNoGusta.length > 0) && (
+                {(data.temasGusta.length > 0 || data.temasNoGusta.length > 0) && (
                   <div className="bg-slate-50 rounded-lg p-4 space-y-2">
                     <p className="text-sm font-medium text-slate-700">Tu mapa de conversación:</p>
-                    {temasGusta.length > 0 && (
+                    {data.temasGusta.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         <span className="text-xs text-green-600 font-medium">Te gusta:</span>
-                        {temasGusta.map(t => (
+                        {data.temasGusta.map(t => (
                           <span key={t} className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs">{t}</span>
                         ))}
                       </div>
                     )}
-                    {temasNoGusta.length > 0 && (
+                    {data.temasNoGusta.length > 0 && (
                       <div className="flex flex-wrap gap-1">
                         <span className="text-xs text-red-600 font-medium">Evitas:</span>
-                        {temasNoGusta.map(t => (
+                        {data.temasNoGusta.map(t => (
                           <span key={t} className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs">{t}</span>
                         ))}
                       </div>

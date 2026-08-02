@@ -99,6 +99,7 @@ export default function Perfil() {
             <Link to="/" className="hover:text-teal-600 transition">Inicio</Link>
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="text-teal-600">Mi Perfil</Link>
+            <Link to="/perfil-profundo" className="hover:text-teal-600 transition">Perfil Profundo</Link>
           </div>
         </div>
       </nav>
