@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -8,11 +9,45 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import {
   Users, Shield, MapPin, Calendar, Heart, Star, Zap, Check,
-  Music, Dog, Coffee, Ticket, AlertTriangle, MessageCircle, ChevronRight
+  Music, Dog, Coffee, Ticket, AlertTriangle, MessageCircle, ChevronRight,
+  LogOut, User
 } from 'lucide-react'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'concierto' | 'perro' | 'cafe'>('concierto')
+  const { user, login, register, logout, error: authError } = useAuth()
+
+  // Form login
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginPassword, setLoginPassword] = useState('')
+  const [loginOpen, setLoginOpen] = useState(false)
+
+  // Form registro
+  const [regEmail, setRegEmail] = useState('')
+  const [regPassword, setRegPassword] = useState('')
+  const [regNombre, setRegNombre] = useState('')
+  const [regOpen, setRegOpen] = useState(false)
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await login(loginEmail, loginPassword)
+      setLoginOpen(false)
+      setLoginEmail('')
+      setLoginPassword('')
+    } catch {}
+  }
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await register(regEmail, regPassword, regNombre)
+      setRegOpen(false)
+      setRegEmail('')
+      setRegPassword('')
+      setRegNombre('')
+    } catch {}
+  }
 
   const panoramas = {
     concierto: {
@@ -68,44 +103,95 @@ export default function Home() {
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
           </div>
           <div className="flex items-center gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="sm">Ingresar</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Bienvenido a Panoramix</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <Input placeholder="Correo electrónico" />
-                  <Input placeholder="Contraseña" type="password" />
-                  <Button className="w-full bg-teal-600 hover:bg-teal-700">Ingresar</Button>
-                  <p className="text-xs text-center text-slate-500">Próximamente: registro con Google y Facebook</p>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 text-sm text-slate-700">
+                  <User className="w-4 h-4 text-teal-600" />
+                  <span className="hidden sm:inline">{user.email}</span>
                 </div>
-              </DialogContent>
-            </Dialog>
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button size="sm" className="bg-teal-600 hover:bg-teal-700">Registrarse</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Crear cuenta en Panoramix</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <Input placeholder="Nombre" />
-                    <Input placeholder="Apellido" />
-                  </div>
-                  <Input placeholder="Correo electrónico" />
-                  <Input placeholder="Teléfono" />
-                  <Input placeholder="Contraseña" type="password" />
-                  <Input placeholder="Repetir contraseña" type="password" />
-                  <Button className="w-full bg-teal-600 hover:bg-teal-700">Crear cuenta</Button>
-                  <p className="text-xs text-slate-500 text-center">Al registrarte aceptas nuestros Términos y Política de Privacidad</p>
-                </div>
-              </DialogContent>
-            </Dialog>
+                <Button variant="ghost" size="sm" onClick={logout} className="text-slate-500 gap-1">
+                  <LogOut className="w-3.5 h-3.5" /> Salir
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="ghost" size="sm">Ingresar</Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Bienvenido a Panoramix</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleLogin} className="space-y-4 py-4">
+                      <Input
+                        placeholder="Correo electrónico"
+                        type="email"
+                        value={loginEmail}
+                        onChange={e => setLoginEmail(e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="Contraseña"
+                        type="password"
+                        value={loginPassword}
+                        onChange={e => setLoginPassword(e.target.value)}
+                        required
+                      />
+                      {authError && (
+                        <p className="text-xs text-red-600">{authError}</p>
+                      )}
+                      <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700">Ingresar</Button>
+                      <p className="text-xs text-center text-slate-500">
+                        ¿No tienes cuenta?{' '}
+                        <button type="button" className="text-teal-600 underline" onClick={() => { setLoginOpen(false); setRegOpen(true) }}>
+                          Regístrate
+                        </button>
+                      </p>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+                <Dialog open={regOpen} onOpenChange={setRegOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="bg-teal-600 hover:bg-teal-700">Registrarse</Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Crear cuenta en Panoramix</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleRegister} className="space-y-4 py-4">
+                      <Input
+                        placeholder="Nombre"
+                        value={regNombre}
+                        onChange={e => setRegNombre(e.target.value)}
+                      />
+                      <Input
+                        placeholder="Correo electrónico"
+                        type="email"
+                        value={regEmail}
+                        onChange={e => setRegEmail(e.target.value)}
+                        required
+                      />
+                      <Input
+                        placeholder="Contraseña (mín. 6 caracteres)"
+                        type="password"
+                        value={regPassword}
+                        onChange={e => setRegPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      {authError && (
+                        <p className="text-xs text-red-600">{authError}</p>
+                      )}
+                      <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700">Crear cuenta</Button>
+                      <p className="text-xs text-slate-500 text-center">
+                        Al registrarte aceptas nuestros Términos y Política de Privacidad
+                      </p>
+                    </form>
+                  </DialogContent>
+                </Dialog>
+              </>
+            )}
           </div>
         </div>
       </nav>
