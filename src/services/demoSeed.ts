@@ -11,7 +11,6 @@
 
 import {
   demoRegistrar,
-  demoLogin,
   demoGuardarPerfil,
   demoGuardarPerfilProfundo,
   demoGuardarContactos,
