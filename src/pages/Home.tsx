@@ -556,15 +556,17 @@ export default function Home() {
             <div>
               <h4 className="text-white font-semibold mb-3">Legal</h4>
               <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white transition">Términos y condiciones</a></li>
-                <li><a href="#" className="hover:text-white transition">Política de privacidad</a></li>
-                <li><a href="#" className="hover:text-white transition">No es app de citas</a></li>
+                <li><Link to="/terminos" className="hover:text-white transition">Términos y condiciones</Link></li>
+                <li><Link to="/terminos" className="hover:text-white transition">Política de privacidad</Link></li>
+                <li><Link to="/terminos" className="hover:text-white transition">Conductas prohibidas</Link></li>
+                <li><Link to="/terminos" className="hover:text-white transition">No es app de citas</Link></li>
               </ul>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-3">Contacto</h4>
               <ul className="space-y-2 text-sm">
                 <li>hola@panoramix.cl</li>
+                <li>legal@panoramix.cl</li>
                 <li>Santiago, Chile</li>
               </ul>
             </div>
@@ -574,6 +576,7 @@ export default function Home() {
                 <li><Link to="/modelo-negocio" className="hover:text-white transition">Resumen Modelo de Negocio</Link></li>
                 <li><Link to="/eventos-rm" className="hover:text-white transition">Eventos RM</Link></li>
                 <li><Link to="/perfil" className="hover:text-white transition">Mi Perfil</Link></li>
+                <li><Link to="/admin" className="hover:text-white transition">Consola Admin</Link></li>
               </ul>
             </div>
           </div>

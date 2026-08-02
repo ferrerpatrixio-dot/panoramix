@@ -10,6 +10,8 @@ import MapaOnboarding from './pages/MapaOnboarding'
 import CrearPanorama from './pages/CrearPanorama'
 import MisPanoramas from './pages/MisPanoramas'
 import Evaluacion from './pages/Evaluacion'
+import Admin from './pages/Admin'
+import Terminos from './pages/Terminos'
 import SosButton from './components/SosButton'
 
 export default function App() {
@@ -26,6 +28,8 @@ export default function App() {
         <Route path="/crear-panorama" element={<CrearPanorama />} />
         <Route path="/mis-panoramas" element={<MisPanoramas />} />
         <Route path="/evaluar" element={<Evaluacion />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/terminos" element={<Terminos />} />
       </Routes>
       <SosButton />
     </AuthProvider>
