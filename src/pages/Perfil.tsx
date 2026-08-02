@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
+import { useAuth } from '@/contexts/AuthContext'
+import { demoGuardarPerfil, demoObtenerPerfil } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -7,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import {
   Users, ChevronLeft, Save, MapPin, Clock, Wallet, Heart,
-  Music, Dog, Coffee, Ticket, Bike, Palette, Theater, Star
+  Music, Dog, Coffee, Ticket, Bike, Palette, Theater, Star,
+  LayoutDashboard
 } from 'lucide-react'
 
 const categoriasInteres = [
@@ -29,8 +32,10 @@ const comunasRM = [
 ]
 
 export default function Perfil() {
+  const { user } = useAuth()
   const [paso, setPaso] = useState(1)
   const [guardado, setGuardado] = useState(false)
+  const [cargando, setCargando] = useState(true)
 
   // Bloque A: Comportamiento
   const [ultimoSabado, setUltimoSabado] = useState('')
@@ -65,6 +70,41 @@ export default function Perfil() {
   const [nuncaHaria, setNuncaHaria] = useState('')
   const [transporte, setTransporte] = useState('')
 
+  // Cargar perfil existente
+  useEffect(() => {
+    if (user) {
+      const perfil = demoObtenerPerfil(user.uid)
+      if (perfil) {
+        setUltimoSabado(perfil.ultimoSabado || '')
+        setUltimoFindeDisfrutado(perfil.ultimoFindeDisfrutado || '')
+        setDespuesTrabajo(perfil.despuesTrabajo || '')
+        setFrecuenciaSocial(perfil.frecuenciaSocial || '')
+        setUltimoEvento(perfil.ultimoEvento || '')
+        setArtistas(perfil.artistas || '')
+        setPeliculaSerie(perfil.peliculaSerie || '')
+        setDeporte(perfil.deporte || '')
+        setNaturaleza(perfil.naturaleza || '')
+        setMascota(perfil.mascota || '')
+        setHorarioPreferido(perfil.horarioPreferido || '')
+        setLugaresFrecuentes(perfil.lugaresFrecuentes || '')
+        setCategoriasSel(perfil.categoriasSel || [])
+        setLlegarEvento(perfil.llegarEvento || '')
+        setConversar(perfil.conversar || '')
+        setTemasEntusiasman(perfil.temasEntusiasman || '')
+        setTemasEvitar(perfil.temasEvitar || '')
+        setSilencios(perfil.silencios || '')
+        setRol(perfil.rol || '')
+        setComunasSel(perfil.comunasSel || [])
+        setDisponibilidad(perfil.disponibilidad || [])
+        setPresupuesto(perfil.presupuesto || '')
+        setCompaniasPref(perfil.companiasPref || '')
+        setNuncaHaria(perfil.nuncaHaria || '')
+        setTransporte(perfil.transporte || '')
+      }
+    }
+    setCargando(false)
+  }, [user])
+
   const toggleDisponibilidad = (d: string) => {
     setDisponibilidad(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d])
   }
@@ -78,11 +118,26 @@ export default function Perfil() {
   }
 
   const handleGuardar = () => {
+    if (!user) return
+    demoGuardarPerfil(user.uid, {
+      ultimoSabado, ultimoFindeDisfrutado, despuesTrabajo, frecuenciaSocial, ultimoEvento,
+      artistas, peliculaSerie, deporte, naturaleza, mascota, horarioPreferido, lugaresFrecuentes, categoriasSel,
+      llegarEvento, conversar, temasEntusiasman, temasEvitar, silencios, rol,
+      comunasSel, disponibilidad, presupuesto, companiasPref, nuncaHaria, transporte,
+    })
     setGuardado(true)
     setTimeout(() => setGuardado(false), 3000)
   }
 
   const totalPasos = 4
+
+  if (cargando) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-slate-500">Cargando perfil...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -100,6 +155,7 @@ export default function Perfil() {
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="text-teal-600">Mi Perfil</Link>
             <Link to="/perfil-profundo" className="hover:text-teal-600 transition">Perfil Profundo</Link>
+            <Link to="/mis-panoramas" className="hover:text-teal-600 transition">Mis Panoramas</Link>
           </div>
         </div>
       </nav>
@@ -134,22 +190,33 @@ export default function Perfil() {
           </Card>
         )}
 
-        {/* LINK A PERFIL PROFUNDO */}
-        <Card className="mb-6 bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200">
-          <CardContent className="p-4 flex items-center justify-between">
-            <div>
-              <p className="text-sm font-semibold text-teal-800">¿Quieres matches más precisos?</p>
-              <p className="text-xs text-teal-600 mt-0.5">Responde preguntas discretas sobre hábitos, estado emocional y estilo conversacional.</p>
-            </div>
-            <Link to="/perfil-profundo">
-              <Button size="sm" variant="outline" className="border-teal-300 text-teal-700 hover:bg-teal-100">
-                Ir a perfil profundo →
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+        {/* LINKS RÁPIDOS */}
+        <div className="grid grid-cols-2 gap-3 mb-6">
+          <Link to="/perfil-profundo">
+            <Card className="bg-gradient-to-r from-teal-50 to-cyan-50 border-teal-200 cursor-pointer hover:shadow-md transition">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-teal-800">Perfil Profundo</p>
+                  <p className="text-xs text-teal-600">Hábitos, estado emocional, conversación</p>
+                </div>
+                <ChevronLeft className="w-4 h-4 text-teal-600 rotate-180" />
+              </CardContent>
+            </Card>
+          </Link>
+          <Link to="/mis-panoramas">
+            <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 cursor-pointer hover:shadow-md transition">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">Mis Panoramas</p>
+                  <p className="text-xs text-amber-600">Ver tus panoramas y matches</p>
+                </div>
+                <LayoutDashboard className="w-4 h-4 text-amber-600" />
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
 
-        {/* PASO 1: COMPORTAMIENTO */}
+        {/* PASOS... (resto igual) */}
         {paso === 1 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
@@ -157,7 +224,6 @@ export default function Perfil() {
               <h2 className="text-lg font-bold text-slate-900">Mi día a día (comportamiento real)</h2>
             </div>
             <p className="text-sm text-slate-500">No preguntamos qué te gustaría. Preguntamos qué haces.</p>
-
             <Card>
               <CardContent className="p-5 space-y-5">
                 <div>
@@ -165,39 +231,31 @@ export default function Perfil() {
                   <p className="text-xs text-slate-400 mb-2">Sé honesto/a. Esto define con quién te emparejamos.</p>
                   <Textarea placeholder="Ej: Me levanté tarde, fui a almorzar con mi hermana a un restaurante en Ñuñoa, después paseé al perro y vi una película en casa." value={ultimoSabado} onChange={e => setUltimoSabado(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Qué hiciste el último fin de semana que disfrutaste?</label>
                   <Textarea placeholder="Ej: Fui a un concierto de Los Bunkers en el Teatro Caupolicán. Fue increíble, aunque fui solo." value={ultimoFindeDisfrutado} onChange={e => setUltimoFindeDisfrutado(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">En un día común de trabajo, ¿qué haces después de salir?</label>
                   <Textarea placeholder="Ej: Generalmente llego a casa, cocino algo rápido y veo series. A veces salgo a caminar al perro." value={despuesTrabajo} onChange={e => setDespuesTrabajo(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Con qué frecuencia sales de tu casa para actividades sociales?</label>
                   <div className="grid grid-cols-2 gap-2">
                     {['Casi nunca', '1-2 veces al mes', 'Semanalmente', 'Varias veces por semana'].map(o => (
                       <button key={o} onClick={() => setFrecuenciaSocial(o)} className={`p-3 rounded-lg border text-sm transition text-left ${
                         frecuenciaSocial === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Cuándo fue la última vez que fuiste a un concierto, evento o bar?</label>
                   <div className="grid grid-cols-2 gap-2">
                     {['Nunca', 'Hace más de 1 año', 'Hace meses', 'La semana pasada'].map(o => (
                       <button key={o} onClick={() => setUltimoEvento(o)} className={`p-3 rounded-lg border text-sm transition text-left ${
                         ultimoEvento === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
@@ -206,83 +264,66 @@ export default function Perfil() {
           </div>
         )}
 
-        {/* PASO 2: INTERESES */}
         {paso === 2 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
               <Badge className="bg-teal-100 text-teal-700">Paso 2</Badge>
               <h2 className="text-lg font-bold text-slate-900">Intereses y preferencias</h2>
             </div>
-
             <Card>
               <CardContent className="p-5 space-y-5">
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">Menciona 3 artistas o bandas que escuchaste recientemente</label>
                   <Input placeholder="Ej: Chayanne, Mon Laferte, Los Bunkers" value={artistas} onChange={e => setArtistas(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Qué película o serie viste últimamente que te gustó?</label>
                   <Input placeholder="Ej: " value={peliculaSerie} onChange={e => setPeliculaSerie(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Haces deporte o solo lo ves / conversas?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Hago deporte', 'Solo lo veo', 'Converso de deporte', 'Ninguno', 'Me da igual'].map(o => (
                       <button key={o} onClick={() => setDeporte(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         deporte === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Con qué frecuencia vas a la naturaleza (parques, trekking, playa)?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Nunca', '1-2 veces al año', 'Mensual', 'Semanal'].map(o => (
                       <button key={o} onClick={() => setNaturaleza(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         naturaleza === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Tienes mascota? ¿Te gustaría salir con alguien que también tenga?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Tengo y prefiero con', 'Tengo, me da igual', 'No tengo, me gustaría', 'No tengo, no me interesa'].map(o => (
                       <button key={o} onClick={() => setMascota(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         mascota === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Prefieres planes con horario fijo o más relajados?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Estricto', 'Flexible', 'Me da igual'].map(o => (
                       <button key={o} onClick={() => setHorarioPreferido(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         horarioPreferido === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Qué tipo de lugares frecuentas cuando sales?</label>
                   <Input placeholder="Ej: bares, restaurantes, cines, parques, teatros..." value={lugaresFrecuentes} onChange={e => setLugaresFrecuentes(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">Categorías de panoramas que más te interesan</label>
                   <div className="flex flex-wrap gap-2">
@@ -300,14 +341,12 @@ export default function Perfil() {
           </div>
         )}
 
-        {/* PASO 3: PERSONALIDAD */}
         {paso === 3 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
               <Badge className="bg-teal-100 text-teal-700">Paso 3</Badge>
               <h2 className="text-lg font-bold text-slate-900">Estilo social y conversación</h2>
             </div>
-
             <Card>
               <CardContent className="p-5 space-y-5">
                 <div>
@@ -316,58 +355,45 @@ export default function Perfil() {
                     {['Me acerco a alguien y hablo', 'Espero a que me hablen', 'Me quedo en un rincón observando', 'Me voy si no conozco a nadie'].map(o => (
                       <button key={o} onClick={() => setLlegarEvento(o)} className={`w-full p-3 rounded-lg border text-sm transition text-left ${
                         llegarEvento === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">En una conversación, ¿tiendes a hablar más o a escuchar más?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Hablo más', 'Escucho más', 'Equilibro', 'Depende del tema'].map(o => (
                       <button key={o} onClick={() => setConversar(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         conversar === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Qué temas te entusiasman conversar?</label>
                   <Textarea placeholder="Ej: música, viajes, comida, tecnología, deportes, series..." value={temasEntusiasman} onChange={e => setTemasEntusiasman(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Qué temas prefieres evitar en una primera salida?</label>
                   <Textarea placeholder="Ej: religión, política, dinero, ex-parejas..." value={temasEvitar} onChange={e => setTemasEvitar(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Te gusta conversar durante toda la actividad o prefieres silencios cómodos?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Siempre conversando', 'Mixto', 'Silencios están bien'].map(o => (
                       <button key={o} onClick={() => setSilencios(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         silencios === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Eres de los que organiza o de los que se suma a planes?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Organizo', 'Me sumo', 'Ambos según el tema'].map(o => (
                       <button key={o} onClick={() => setRol(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         rol === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
@@ -376,14 +402,12 @@ export default function Perfil() {
           </div>
         )}
 
-        {/* PASO 4: LOGÍSTICA */}
         {paso === 4 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
               <Badge className="bg-teal-100 text-teal-700">Paso 4</Badge>
               <h2 className="text-lg font-bold text-slate-900">Logística y disponibilidad</h2>
             </div>
-
             <Card>
               <CardContent className="p-5 space-y-5">
                 <div>
@@ -394,16 +418,13 @@ export default function Perfil() {
                     {comunasRM.map(c => (
                       <button key={c} onClick={() => toggleComuna(c)} className={`px-3 py-1 rounded-full border text-xs transition ${
                         comunasSel.includes(c) ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {c}
-                      </button>
+                      }`}>{c}</button>
                     ))}
                   </div>
                   {comunasSel.length > 0 && (
                     <p className="text-xs text-slate-400 mt-1">Seleccionadas: {comunasSel.join(', ')}</p>
                   )}
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2 flex items-center gap-1">
                     <Clock className="w-4 h-4 text-teal-500" /> ¿Qué horario prefieres para salir?
@@ -412,13 +433,10 @@ export default function Perfil() {
                     {['Mañana', 'Tarde', 'Noche', 'Fin de semana'].map(d => (
                       <button key={d} onClick={() => toggleDisponibilidad(d)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         disponibilidad.includes(d) ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {d}
-                      </button>
+                      }`}>{d}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2 flex items-center gap-1">
                     <Wallet className="w-4 h-4 text-teal-500" /> ¿Cuál es tu presupuesto típico para una salida?
@@ -427,13 +445,10 @@ export default function Perfil() {
                     {['$0 (gratis)', '$5.000 - $15.000', '$15.000 - $30.000', '$30.000 - $60.000', '$60.000+'].map(o => (
                       <button key={o} onClick={() => setPresupuesto(o)} className={`p-3 rounded-lg border text-sm transition text-left ${
                         presupuesto === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2 flex items-center gap-1">
                     <Heart className="w-4 h-4 text-teal-500" /> ¿Qué tipo de compañía prefieres para salir?
@@ -442,27 +457,21 @@ export default function Perfil() {
                     {['Femenina', 'Masculina', 'Me es indiferente'].map(o => (
                       <button key={o} onClick={() => setCompaniasPref(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         companiasPref === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-1">¿Hay algún tipo de panorama que NUNCA harías?</label>
                   <Textarea placeholder="Ej: karaoke, discotecas, fútbol, trekking extremo..." value={nuncaHaria} onChange={e => setNuncaHaria(e.target.value)} />
                 </div>
-
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Estarías dispuesto/a a compartir transporte o prefieres llegar solo?</label>
                   <div className="flex flex-wrap gap-2">
                     {['Comparto transporte', 'Llego solo siempre', 'Depende del lugar'].map(o => (
                       <button key={o} onClick={() => setTransporte(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
                         transporte === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
-                      }`}>
-                        {o}
-                      </button>
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
@@ -473,19 +482,10 @@ export default function Perfil() {
 
         {/* BOTONES NAVEGACIÓN */}
         <div className="flex items-center justify-between mt-8">
-          <Button
-            variant="outline"
-            onClick={() => setPaso(p => Math.max(1, p - 1))}
-            disabled={paso === 1}
-          >
-            Anterior
-          </Button>
-
+          <Button variant="outline" onClick={() => setPaso(p => Math.max(1, p - 1))} disabled={paso === 1}>Anterior</Button>
           <div className="flex gap-2">
             {paso < totalPasos ? (
-              <Button onClick={() => setPaso(p => Math.min(totalPasos, p + 1))} className="bg-teal-600 hover:bg-teal-700">
-                Siguiente
-              </Button>
+              <Button onClick={() => setPaso(p => Math.min(totalPasos, p + 1))} className="bg-teal-600 hover:bg-teal-700">Siguiente</Button>
             ) : (
               <Button onClick={handleGuardar} className="bg-teal-600 hover:bg-teal-700 gap-1">
                 <Save className="w-4 h-4" /> Guardar perfil

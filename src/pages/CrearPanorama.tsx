@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
+import { useAuth } from '@/contexts/AuthContext'
+import { demoCrearPanorama } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -7,10 +9,13 @@ import { Badge } from '@/components/ui/badge'
 import { generarDescripcionPanorama, moderarContenido, type ModeracionResult } from '@/services/openai'
 import {
   Users, ChevronLeft, Send, Sparkles, AlertTriangle, CheckCircle,
-  Loader2, MapPin, Calendar, DollarSign, UserCircle, Wand2, Eye
+  Loader2, MapPin, Calendar, DollarSign, UserCircle, Wand2, Eye,
+  LayoutDashboard
 } from 'lucide-react'
 
 export default function CrearPanorama() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
   const [paso, setPaso] = useState<'formulario' | 'generando' | 'preview' | 'publicado'>('formulario')
 
   // Datos del formulario
@@ -39,7 +44,6 @@ export default function CrearPanorama() {
     setPaso('generando')
 
     try {
-      // 1. Generar descripción
       const descripcion = await generarDescripcionPanorama(
         actividad,
         lugar,
@@ -49,7 +53,6 @@ export default function CrearPanorama() {
       )
       setDescripcionGenerada(descripcion)
 
-      // 2. Moderar contenido
       const moderacion = await moderarContenido(descripcion)
       setModResult(moderacion)
 
@@ -63,6 +66,20 @@ export default function CrearPanorama() {
   }
 
   const publicar = () => {
+    if (!user) {
+      setError('Debes iniciar sesión para publicar un panorama.')
+      return
+    }
+    demoCrearPanorama(user.uid, {
+      actividad,
+      lugar,
+      fecha,
+      hora,
+      presupuesto,
+      companiasPref,
+      entradaComprada,
+      descripcionGenerada,
+    })
     setPaso('publicado')
   }
 
@@ -93,109 +110,66 @@ export default function CrearPanorama() {
           <p className="text-slate-500">Describe tu actividad y te ayudamos a redactarla. Luego buscamos compañía.</p>
         </div>
 
+        {!user && (
+          <Card className="mb-6 bg-amber-50 border-amber-200">
+            <CardContent className="p-4 text-amber-700 text-sm">
+              ⚠️ <strong>Importante:</strong> Necesitas <Link to="/" className="underline font-medium">iniciar sesión</Link> para publicar panoramas y recibir matches.
+            </CardContent>
+          </Card>
+        )}
+
         {/* PASO 1: FORMULARIO */}
         {paso === 'formulario' && (
           <div className="space-y-5">
             <Card>
               <CardContent className="p-5 space-y-5">
-                {/* Qué */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-1 flex items-center gap-1">
                     <Sparkles className="w-4 h-4 text-amber-500" /> ¿Qué quieres hacer?
                   </label>
-                  <p className="text-xs text-slate-400 mb-1">Sé específico. Ej: "Ir al concierto de Chayanne"</p>
-                  <Input
-                    value={actividad}
-                    onChange={e => setActividad(e.target.value)}
-                    placeholder="Ej: Ir a concierto de Los Bunkers"
-                  />
+                  <p className="text-xs text-slate-400 mb-1">Sé específico. Ej: &quot;Ir al concierto de Chayanne&quot;</p>
+                  <Input value={actividad} onChange={e => setActividad(e.target.value)} placeholder="Ej: Ir a concierto de Los Bunkers" />
                 </div>
-
-                {/* Dónde */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-1 flex items-center gap-1">
                     <MapPin className="w-4 h-4 text-red-500" /> ¿Dónde?
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      value={lugar}
-                      onChange={e => setLugar(e.target.value)}
-                      placeholder="Lugar / Venue"
-                    />
-                    <Input
-                      value={presupuesto}
-                      onChange={e => setPresupuesto(e.target.value)}
-                      placeholder="Presupuesto (CLP)"
-                    />
+                    <Input value={lugar} onChange={e => setLugar(e.target.value)} placeholder="Lugar / Venue" />
+                    <Input value={presupuesto} onChange={e => setPresupuesto(e.target.value)} placeholder="Presupuesto (CLP)" />
                   </div>
                 </div>
-
-                {/* Cuándo */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-1 flex items-center gap-1">
                     <Calendar className="w-4 h-4 text-teal-500" /> ¿Cuándo?
                   </label>
                   <div className="grid grid-cols-2 gap-3">
-                    <Input
-                      type="date"
-                      value={fecha}
-                      onChange={e => setFecha(e.target.value)}
-                    />
-                    <Input
-                      type="time"
-                      value={hora}
-                      onChange={e => setHora(e.target.value)}
-                    />
+                    <Input type="date" value={fecha} onChange={e => setFecha(e.target.value)} />
+                    <Input type="time" value={hora} onChange={e => setHora(e.target.value)} />
                   </div>
                 </div>
-
-                {/* Compañía */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-2 flex items-center gap-1">
                     <UserCircle className="w-4 h-4 text-purple-500" /> ¿Qué compañía buscas?
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {['Femenina', 'Masculina', 'Me es indiferente'].map(o => (
-                      <button
-                        key={o}
-                        onClick={() => setCompaniasPref(o)}
-                        className={`px-4 py-2 rounded-full border text-sm transition ${
-                          companiasPref === o
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        {o}
-                      </button>
+                      <button key={o} onClick={() => setCompaniasPref(o)} className={`px-4 py-2 rounded-full border text-sm transition ${
+                        companiasPref === o ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
+                      }`}>{o}</button>
                     ))}
                   </div>
                 </div>
-
-                {/* Entrada comprada */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">¿Ya tienes la entrada?</label>
                   <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: 'si', label: 'Sí, ya la compré' },
-                      { id: 'no', label: 'No, falta comprar' },
-                      { id: 'no-aplica', label: 'No aplica / es gratis' },
-                    ].map(o => (
-                      <button
-                        key={o.id}
-                        onClick={() => setEntradaComprada(o.id as any)}
-                        className={`px-4 py-2 rounded-full border text-sm transition ${
-                          entradaComprada === o.id
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
-                        {o.label}
-                      </button>
+                    {[{ id: 'si', label: 'Sí, ya la compré' }, { id: 'no', label: 'No, falta comprar' }, { id: 'no-aplica', label: 'No aplica / es gratis' }].map(o => (
+                      <button key={o.id} onClick={() => setEntradaComprada(o.id as any)} className={`px-4 py-2 rounded-full border text-sm transition ${
+                        entradaComprada === o.id ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
+                      }`}>{o.label}</button>
                     ))}
                   </div>
                 </div>
-
-                {/* Tono */}
                 <div>
                   <label className="font-medium text-slate-900 block mb-2">Tono de la descripción</label>
                   <div className="flex gap-2">
@@ -204,40 +178,22 @@ export default function CrearPanorama() {
                       { id: 'formal' as const, label: 'Formal 📝', desc: 'Claro y respetuoso' },
                       { id: 'divertido' as const, label: 'Divertido 🎉', desc: 'Con humor y entusiasmo' },
                     ].map(t => (
-                      <button
-                        key={t.id}
-                        onClick={() => setTono(t.id)}
-                        className={`flex-1 p-3 rounded-lg border text-sm transition text-center ${
-                          tono === t.id
-                            ? 'border-teal-500 bg-teal-50 text-teal-700'
-                            : 'border-slate-200 hover:border-slate-300'
-                        }`}
-                      >
+                      <button key={t.id} onClick={() => setTono(t.id)} className={`flex-1 p-3 rounded-lg border text-sm transition text-center ${
+                        tono === t.id ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 hover:border-slate-300'
+                      }`}>
                         <div className="font-medium">{t.label}</div>
                         <div className="text-xs text-slate-400 mt-0.5">{t.desc}</div>
                       </button>
                     ))}
                   </div>
                 </div>
-
                 {error && (
                   <div className="text-sm text-red-600 bg-red-50 p-3 rounded-lg flex items-center gap-2">
-                    <AlertTriangle className="w-4 h-4" />
-                    {error}
+                    <AlertTriangle className="w-4 h-4" /> {error}
                   </div>
                 )}
-
-                <Button
-                  onClick={generarDescripcion}
-                  disabled={cargando}
-                  className="w-full bg-teal-600 hover:bg-teal-700 gap-2"
-                  size="lg"
-                >
-                  {cargando ? (
-                    <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
-                  ) : (
-                    <><Wand2 className="w-4 h-4" /> Generar descripción con IA</>
-                  )}
+                <Button onClick={generarDescripcion} disabled={cargando} className="w-full bg-teal-600 hover:bg-teal-700 gap-2" size="lg">
+                  {cargando ? <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</> : <><Wand2 className="w-4 h-4" /> Generar descripción con IA</>}
                 </Button>
               </CardContent>
             </Card>
@@ -258,7 +214,6 @@ export default function CrearPanorama() {
         {/* PASO 3: PREVIEW */}
         {paso === 'preview' && (
           <div className="space-y-5">
-            {/* Tarjeta del panorama */}
             <Card className="border-2 border-teal-200 overflow-hidden">
               <div className="bg-gradient-to-r from-teal-500 to-cyan-600 p-4 text-white">
                 <div className="flex items-center justify-between">
@@ -271,8 +226,6 @@ export default function CrearPanorama() {
                   <h2 className="text-xl font-bold text-slate-900">{actividad}</h2>
                   <p className="text-sm text-slate-500 mt-1">{lugar} · {fecha} {hora && `· ${hora}`}</p>
                 </div>
-
-                {/* Descripción generada */}
                 <div className="bg-slate-50 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <Sparkles className="w-4 h-4 text-amber-500" />
@@ -280,8 +233,6 @@ export default function CrearPanorama() {
                   </div>
                   <p className="text-sm text-slate-700 leading-relaxed">{descripcionGenerada}</p>
                 </div>
-
-                {/* Datos rápidos */}
                 <div className="grid grid-cols-3 gap-3">
                   <div className="bg-slate-50 p-3 rounded-lg text-center">
                     <DollarSign className="w-4 h-4 text-slate-400 mx-auto mb-1" />
@@ -296,48 +247,24 @@ export default function CrearPanorama() {
                   <div className="bg-slate-50 p-3 rounded-lg text-center">
                     <Calendar className="w-4 h-4 text-slate-400 mx-auto mb-1" />
                     <p className="text-xs text-slate-500">Entrada</p>
-                    <p className="text-sm font-medium text-slate-700">
-                      {entradaComprada === 'si' ? 'Ya comprada' : entradaComprada === 'no' ? 'Pendiente' : 'Gratis'}
-                    </p>
+                    <p className="text-sm font-medium text-slate-700">{entradaComprada === 'si' ? 'Ya comprada' : entradaComprada === 'no' ? 'Pendiente' : 'Gratis'}</p>
                   </div>
                 </div>
-
-                {/* Moderación */}
                 {modResult && (
                   <div className={`p-3 rounded-lg flex items-center gap-2 text-sm ${
-                    modResult.aprobado
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : 'bg-red-50 text-red-700 border border-red-200'
+                    modResult.aprobado ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
                   }`}>
-                    {modResult.aprobado ? (
-                      <><CheckCircle className="w-4 h-4" /> Contenido aprobado por moderación automática</>
-                    ) : (
-                      <><AlertTriangle className="w-4 h-4" /> {modResult.motivo}</>
-                    )}
+                    {modResult.aprobado ? <><CheckCircle className="w-4 h-4" /> Contenido aprobado por moderación automática</> : <><AlertTriangle className="w-4 h-4" /> {modResult.motivo}</>}
                   </div>
                 )}
               </CardContent>
             </Card>
-
-            {/* Acciones */}
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setPaso('formulario')}
-                className="flex-1"
-              >
-                Editar datos
-              </Button>
-              <Button
-                onClick={publicar}
-                disabled={modResult?.aprobado === false}
-                className="flex-1 bg-teal-600 hover:bg-teal-700 gap-1"
-              >
+              <Button variant="outline" onClick={() => setPaso('formulario')} className="flex-1">Editar datos</Button>
+              <Button onClick={publicar} disabled={modResult?.aprobado === false} className="flex-1 bg-teal-600 hover:bg-teal-700 gap-1">
                 <Send className="w-4 h-4" /> Publicar panorama
               </Button>
             </div>
-
-            {/* Sugerencia si fue rechazado */}
             {modResult?.aprobado === false && (
               <Card className="bg-red-50 border-red-200">
                 <CardContent className="p-4">
@@ -360,8 +287,6 @@ export default function CrearPanorama() {
                 <p className="text-sm text-green-600 mt-2">Ahora buscaremos compañía compatible para tu panorama.</p>
               </CardContent>
             </Card>
-
-            {/* Resumen */}
             <Card>
               <CardContent className="p-5 space-y-3">
                 <h3 className="font-bold text-slate-900">{actividad}</h3>
@@ -373,23 +298,15 @@ export default function CrearPanorama() {
                 </div>
               </CardContent>
             </Card>
-
             <div className="grid grid-cols-2 gap-3">
-              <Link to="/eventos-rm" className="w-full">
-                <Button variant="outline" className="w-full gap-1">
-                  <Eye className="w-4 h-4" /> Ver eventos RM
-                </Button>
-              </Link>
+              <Button onClick={() => navigate('/mis-panoramas')} className="w-full bg-teal-600 hover:bg-teal-700 gap-1">
+                <LayoutDashboard className="w-4 h-4" /> Ver mis panoramas
+              </Button>
               <Button onClick={() => {
                 setPaso('formulario')
-                setActividad('')
-                setLugar('')
-                setFecha('')
-                setHora('')
-                setPresupuesto('')
-                setDescripcionGenerada('')
-                setModResult(null)
-              }} className="w-full bg-teal-600 hover:bg-teal-700 gap-1">
+                setActividad(''); setLugar(''); setFecha(''); setHora(''); setPresupuesto('')
+                setDescripcionGenerada(''); setModResult(null)
+              }} variant="outline" className="w-full gap-1">
                 <Sparkles className="w-4 h-4" /> Crear otro
               </Button>
             </div>

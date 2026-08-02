@@ -8,6 +8,7 @@ import PerfilProfundo from './pages/PerfilProfundo'
 import ChatOnboarding from './pages/ChatOnboarding'
 import MapaOnboarding from './pages/MapaOnboarding'
 import CrearPanorama from './pages/CrearPanorama'
+import MisPanoramas from './pages/MisPanoramas'
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/chat-onboarding" element={<ChatOnboarding />} />
         <Route path="/mapa-onboarding" element={<MapaOnboarding />} />
         <Route path="/crear-panorama" element={<CrearPanorama />} />
+        <Route path="/mis-panoramas" element={<MisPanoramas />} />
       </Routes>
     </AuthProvider>
   )
