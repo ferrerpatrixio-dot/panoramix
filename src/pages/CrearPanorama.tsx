@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Textarea } from '@/components/ui/textarea'
 import { generarDescripcionPanorama, moderarContenido, type ModeracionResult } from '@/services/openai'
 import {
   Users, ChevronLeft, Send, Sparkles, AlertTriangle, CheckCircle,
