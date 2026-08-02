@@ -13,6 +13,7 @@ import Evaluacion from './pages/Evaluacion'
 import Admin from './pages/Admin'
 import Terminos from './pages/Terminos'
 import SosButton from './components/SosButton'
+import DemoResetButton from './components/DemoResetButton'
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="/terminos" element={<Terminos />} />
       </Routes>
       <SosButton />
+      <DemoResetButton />
     </AuthProvider>
   )
 }
