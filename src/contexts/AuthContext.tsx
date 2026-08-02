@@ -6,6 +6,7 @@ import {
 
 interface AuthContextType {
   user: DemoUser | null
+  isAdmin: boolean
   loading: boolean
   login: (email: string, password: string) => Promise<void>
   register: (email: string, password: string, displayName?: string) => Promise<void>
@@ -19,6 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<DemoUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const isAdmin = user?.email === 'admin@panoramix.com'
 
   // Restaurar sesión al cargar
   useEffect(() => {
@@ -55,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, error }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, login, register, logout, error }}>
       {children}
     </AuthContext.Provider>
   )

@@ -15,7 +15,7 @@ import {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'concierto' | 'perro' | 'cafe'>('concierto')
-  const { user, login, register, logout, error: authError } = useAuth()
+  const { user, isAdmin, login, register, logout, error: authError } = useAuth()
 
   // Form login
   const [loginEmail, setLoginEmail] = useState('')
@@ -101,6 +101,8 @@ export default function Home() {
             <a href="#precios" className="hover:text-teal-600 transition">Precios</a>
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
+            <Link to="/chat-onboarding" className="hover:text-teal-600 transition">Conoce a Panxi</Link>
+            {isAdmin && <Link to="/admin" className="text-amber-600 hover:text-amber-700 transition font-semibold">Admin</Link>}
           </div>
           <div className="flex items-center gap-2">
             {user ? (
@@ -576,7 +578,8 @@ export default function Home() {
                 <li><Link to="/modelo-negocio" className="hover:text-white transition">Resumen Modelo de Negocio</Link></li>
                 <li><Link to="/eventos-rm" className="hover:text-white transition">Eventos RM</Link></li>
                 <li><Link to="/perfil" className="hover:text-white transition">Mi Perfil</Link></li>
-                <li><Link to="/admin" className="hover:text-white transition">Consola Admin</Link></li>
+                <li><Link to="/chat-onboarding" className="hover:text-white transition">Conoce a Panxi 🤖</Link></li>
+                {isAdmin && <li><Link to="/admin" className="text-amber-400 hover:text-amber-300 transition font-semibold">Consola Admin</Link></li>}
               </ul>
             </div>
           </div>

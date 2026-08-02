@@ -14,6 +14,7 @@ import Admin from './pages/Admin'
 import Terminos from './pages/Terminos'
 import SosButton from './components/SosButton'
 import DemoResetButton from './components/DemoResetButton'
+import AdminRoute from './components/AdminRoute'
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
         <Route path="/crear-panorama" element={<CrearPanorama />} />
         <Route path="/mis-panoramas" element={<MisPanoramas />} />
         <Route path="/evaluar" element={<Evaluacion />} />
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
         <Route path="/terminos" element={<Terminos />} />
       </Routes>
       <SosButton />

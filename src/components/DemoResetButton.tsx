@@ -1,9 +1,13 @@
 import { useState } from 'react'
 import { RotateCcw } from 'lucide-react'
 import { demoResetAndSeed } from '@/services/demoSeed'
+import { useAuth } from '@/contexts/AuthContext'
 
 export default function DemoResetButton() {
+  const { isAdmin } = useAuth()
   const [confirmando, setConfirmando] = useState(false)
+
+  if (!isAdmin) return null
 
   const handleReset = () => {
     if (!confirmando) {
