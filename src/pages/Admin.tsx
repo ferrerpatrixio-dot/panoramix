@@ -8,11 +8,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
-  Users, Shield, Star, AlertTriangle, CheckCircle, UserX, UserCheck,
-  MessageSquare, Eye, Clock, Ban, Unlock
+  Users, Shield, Star, AlertTriangle, CheckCircle, UserX,
+  MessageSquare, Clock, Ban, Unlock
 } from 'lucide-react'
 
 export default function Admin() {

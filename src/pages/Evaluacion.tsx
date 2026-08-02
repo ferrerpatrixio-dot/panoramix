@@ -4,7 +4,6 @@ import { useAuth } from '@/contexts/AuthContext'
 import { demoGuardarEvaluacion, demoObtenerPanorama, demoCalcularReputacion } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Users, ChevronLeft, Star, CheckCircle, AlertTriangle,
