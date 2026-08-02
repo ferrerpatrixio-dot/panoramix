@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Users, ChevronLeft, Save, Star, Wine, Cigarette, HeartPulse,
+  MessageCircle, Volume2, Ear, Activity, ShieldCheck, Dumbbell, Landmark
 } from 'lucide-react'
 
 const STORAGE_KEY = 'panoramix_perfil_profundo'
