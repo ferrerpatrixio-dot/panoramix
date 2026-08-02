@@ -9,6 +9,8 @@ import ChatOnboarding from './pages/ChatOnboarding'
 import MapaOnboarding from './pages/MapaOnboarding'
 import CrearPanorama from './pages/CrearPanorama'
 import MisPanoramas from './pages/MisPanoramas'
+import Evaluacion from './pages/Evaluacion'
+import SosButton from './components/SosButton'
 
 export default function App() {
   return (
@@ -23,7 +25,9 @@ export default function App() {
         <Route path="/mapa-onboarding" element={<MapaOnboarding />} />
         <Route path="/crear-panorama" element={<CrearPanorama />} />
         <Route path="/mis-panoramas" element={<MisPanoramas />} />
+        <Route path="/evaluar" element={<Evaluacion />} />
       </Routes>
+      <SosButton />
     </AuthProvider>
   )
 }

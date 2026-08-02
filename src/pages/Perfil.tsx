@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@/contexts/AuthContext'
-import { demoGuardarPerfil, demoObtenerPerfil } from '@/services/demoBackend'
+import { demoGuardarPerfil, demoObtenerPerfil, demoGuardarContactos, demoObtenerContactos, type DemoContactoEmergencia } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import {
   Users, ChevronLeft, Save, MapPin, Clock, Wallet, Heart,
   Music, Dog, Coffee, Ticket, Bike, Palette, Theater, Star,
-  LayoutDashboard
+  LayoutDashboard, AlertTriangle, Phone, Trash2
 } from 'lucide-react'
 
 const categoriasInteres = [
@@ -70,6 +70,12 @@ export default function Perfil() {
   const [nuncaHaria, setNuncaHaria] = useState('')
   const [transporte, setTransporte] = useState('')
 
+  // Contactos de emergencia
+  const [contactosEmergencia, setContactosEmergencia] = useState<DemoContactoEmergencia[]>([])
+  const [nuevoContactoNombre, setNuevoContactoNombre] = useState('')
+  const [nuevoContactoTelefono, setNuevoContactoTelefono] = useState('')
+  const [nuevoContactoRelacion, setNuevoContactoRelacion] = useState('')
+
   // Cargar perfil existente
   useEffect(() => {
     if (user) {
@@ -101,6 +107,8 @@ export default function Perfil() {
         setNuncaHaria(perfil.nuncaHaria || '')
         setTransporte(perfil.transporte || '')
       }
+      const contactos = demoObtenerContactos(user.uid)
+      setContactosEmergencia(contactos)
     }
     setCargando(false)
   }, [user])
@@ -115,6 +123,27 @@ export default function Perfil() {
 
   const toggleCategoria = (c: string) => {
     setCategoriasSel(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c])
+  }
+
+  const agregarContacto = () => {
+    if (!nuevoContactoNombre.trim() || !nuevoContactoTelefono.trim()) return
+    const nuevo: DemoContactoEmergencia = {
+      nombre: nuevoContactoNombre,
+      telefono: nuevoContactoTelefono,
+      relacion: nuevoContactoRelacion || 'Otro',
+    }
+    const updated = [...contactosEmergencia, nuevo]
+    setContactosEmergencia(updated)
+    if (user) demoGuardarContactos(user.uid, updated)
+    setNuevoContactoNombre('')
+    setNuevoContactoTelefono('')
+    setNuevoContactoRelacion('')
+  }
+
+  const eliminarContacto = (index: number) => {
+    const updated = contactosEmergencia.filter((_, i) => i !== index)
+    setContactosEmergencia(updated)
+    if (user) demoGuardarContactos(user.uid, updated)
   }
 
   const handleGuardar = () => {
@@ -216,7 +245,7 @@ export default function Perfil() {
           </Link>
         </div>
 
-        {/* PASOS... (resto igual) */}
+        {/* PASO 1 */}
         {paso === 1 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
@@ -264,6 +293,7 @@ export default function Perfil() {
           </div>
         )}
 
+        {/* PASO 2 */}
         {paso === 2 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
@@ -341,6 +371,7 @@ export default function Perfil() {
           </div>
         )}
 
+        {/* PASO 3 */}
         {paso === 3 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
@@ -402,6 +433,7 @@ export default function Perfil() {
           </div>
         )}
 
+        {/* PASO 4 */}
         {paso === 4 && (
           <div className="space-y-6">
             <div className="flex items-center gap-2 mb-4">
@@ -479,6 +511,57 @@ export default function Perfil() {
             </Card>
           </div>
         )}
+
+        {/* CONTACTOS DE EMERGENCIA */}
+        <div className="space-y-4 mt-8">
+          <div className="flex items-center gap-2">
+            <Badge className="bg-red-100 text-red-700"><AlertTriangle className="w-3 h-3 mr-1" /> Seguridad</Badge>
+            <h2 className="text-lg font-bold text-slate-900">Contactos de emergencia</h2>
+          </div>
+          <p className="text-sm text-slate-500">
+            Obligatorio: registra al menos 1 contacto para el botón SOS. En caso de emergencia, recibirán tu ubicación.
+          </p>
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              {contactosEmergencia.length > 0 && (
+                <div className="space-y-2">
+                  {contactosEmergencia.map((c, i) => (
+                    <div key={i} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700 font-bold text-sm">
+                          {c.nombre[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-slate-900">{c.nombre}</p>
+                          <p className="text-xs text-slate-500">{c.relacion} · {c.telefono}</p>
+                        </div>
+                      </div>
+                      <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-red-500" onClick={() => eliminarContacto(i)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {contactosEmergencia.length < 2 && (
+                <div className="grid grid-cols-3 gap-3">
+                  <Input placeholder="Nombre" value={nuevoContactoNombre} onChange={e => setNuevoContactoNombre(e.target.value)} />
+                  <Input placeholder="Teléfono" value={nuevoContactoTelefono} onChange={e => setNuevoContactoTelefono(e.target.value)} />
+                  <Input placeholder="Relación" value={nuevoContactoRelacion} onChange={e => setNuevoContactoRelacion(e.target.value)} />
+                </div>
+              )}
+              {contactosEmergencia.length < 2 && (
+                <Button onClick={agregarContacto} disabled={!nuevoContactoNombre.trim() || !nuevoContactoTelefono.trim()} variant="outline" className="w-full gap-1">
+                  <Phone className="w-4 h-4" /> Agregar contacto de emergencia
+                </Button>
+              )}
+              {contactosEmergencia.length >= 2 && (
+                <p className="text-xs text-slate-400 text-center">Máximo 2 contactos de emergencia configurados.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
 
         {/* BOTONES NAVEGACIÓN */}
         <div className="flex items-center justify-between mt-8">

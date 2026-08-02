@@ -7,7 +7,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
   Users, ChevronLeft, MapPin, Calendar, DollarSign, UserCircle,
-  Trash2, XCircle, CheckCircle, Clock, Sparkles, Eye, MessageCircle
+  Trash2, XCircle, CheckCircle, Clock, Sparkles, Eye, MessageCircle,
+  Star
 } from 'lucide-react'
 
 export default function MisPanoramas() {
@@ -192,7 +193,14 @@ export default function MisPanoramas() {
                                   </Button>
                                 </>
                               ) : m.estado === 'aceptado' ? (
-                                <Badge className="bg-green-100 text-green-700">Aceptado ✓</Badge>
+                                <div className="flex items-center gap-1">
+                                  <Badge className="bg-green-100 text-green-700">Aceptado ✓</Badge>
+                                  <Link to={`/evaluar?panorama=${p.id}&match=${m.matchUserId}&nombre=${encodeURIComponent(m.matchUserName)}`}>
+                                    <Button size="sm" variant="outline" className="text-xs h-7 px-2 border-amber-300 text-amber-700 hover:bg-amber-50">
+                                      <Star className="w-3 h-3 mr-1" /> Evaluar
+                                    </Button>
+                                  </Link>
+                                </div>
                               ) : (
                                 <Badge variant="outline" className="text-slate-400">Rechazado</Badge>
                               )}

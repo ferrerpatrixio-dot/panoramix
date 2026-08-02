@@ -12,6 +12,26 @@
 // TIPOS
 // ═══════════════════════════════════════════════════════════════
 
+export interface DemoContactoEmergencia {
+  nombre: string
+  telefono: string
+  relacion: string
+}
+
+export interface DemoEvaluacion {
+  id: string
+  panoramaId: string
+  evaluadorUid: string
+  evaluadoUid: string
+  evaluadoNombre: string
+  estrellas: number
+  comentario: string
+  cumplioPanorama: boolean
+  llegoATiempo: boolean
+  volveriaAJuntarse: boolean
+  createdAt: string
+}
+
 export interface DemoUser {
   uid: string
   email: string
@@ -21,13 +41,11 @@ export interface DemoUser {
 
 export interface DemoPerfil {
   uid: string
-  // Bloque A: Comportamiento
   ultimoSabado?: string
   ultimoFindeDisfrutado?: string
   despuesTrabajo?: string
   frecuenciaSocial?: string
   ultimoEvento?: string
-  // Bloque B: Intereses
   artistas?: string
   peliculaSerie?: string
   deporte?: string
@@ -36,14 +54,12 @@ export interface DemoPerfil {
   horarioPreferido?: string
   lugaresFrecuentes?: string
   categoriasSel?: string[]
-  // Bloque C: Personalidad
   llegarEvento?: string
   conversar?: string
   temasEntusiasman?: string
   temasEvitar?: string
   silencios?: string
   rol?: string
-  // Bloque D: Logística
   comunasSel?: string[]
   disponibilidad?: string[]
   presupuesto?: string
@@ -103,6 +119,8 @@ const SESSION_KEY = 'demo_session'
 const PERFILES_KEY = 'demo_perfiles'
 const PERFILES_PROFUNDOS_KEY = 'demo_perfiles_profundos'
 const PANORAMAS_KEY = 'demo_panoramas'
+const CONTACTOS_KEY = 'demo_contactos'
+const EVALUACIONES_KEY = 'demo_evaluaciones'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -166,6 +184,21 @@ export function demoLogout() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CONTACTOS DE EMERGENCIA
+// ═══════════════════════════════════════════════════════════════
+
+export function demoGuardarContactos(uid: string, contactos: DemoContactoEmergencia[]) {
+  const all = load<Record<string, DemoContactoEmergencia[]>>(CONTACTOS_KEY, {})
+  all[uid] = contactos
+  save(CONTACTOS_KEY, all)
+}
+
+export function demoObtenerContactos(uid: string): DemoContactoEmergencia[] {
+  const all = load<Record<string, DemoContactoEmergencia[]>>(CONTACTOS_KEY, {})
+  return all[uid] || []
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PERFILES
 // ═══════════════════════════════════════════════════════════════
 
@@ -203,7 +236,6 @@ export function demoCrearPanorama(uid: string, data: Omit<DemoPanorama, 'id' | '
   const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
   const id = generarId()
   
-  // Generar matches simulados con "otros usuarios"
   const matches = generarMatchesSimulados(data)
   
   const panorama: DemoPanorama = {
@@ -255,19 +287,52 @@ export function demoEliminarPanorama(id: string) {
   save(PANORAMAS_KEY, panoramas)
 }
 
-// Generar matches simulados para demo
 function generarMatchesSimulados(_data: any): DemoMatch[] {
   const nombres = ['Carla', 'Diego', 'Valentina', 'Andrés', 'Francisca', 'Javier', 'Camila', 'Rodrigo']
-  const numMatches = Math.floor(Math.random() * 3) + 1 // 1-3 matches
+  const numMatches = Math.floor(Math.random() * 3) + 1
   const shuffled = nombres.sort(() => Math.random() - 0.5)
   
   return shuffled.slice(0, numMatches).map((nombre, i) => ({
     matchUserId: generarId(),
     matchUserName: nombre,
     estado: 'pendiente',
-    compatibilidad: Math.floor(Math.random() * 30) + 65, // 65-95%
+    compatibilidad: Math.floor(Math.random() * 30) + 65,
     createdAt: new Date(Date.now() - i * 60000).toISOString(),
   }))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EVALUACIONES
+// ═══════════════════════════════════════════════════════════════
+
+export function demoGuardarEvaluacion(evaluacion: Omit<DemoEvaluacion, 'id' | 'createdAt'>): DemoEvaluacion {
+  const all = load<Record<string, DemoEvaluacion>>(EVALUACIONES_KEY, {})
+  const id = generarId()
+  const nueva: DemoEvaluacion = { ...evaluacion, id, createdAt: new Date().toISOString() }
+  all[id] = nueva
+  save(EVALUACIONES_KEY, all)
+  return nueva
+}
+
+export function demoObtenerEvaluacionesUsuario(uid: string): DemoEvaluacion[] {
+  const all = load<Record<string, DemoEvaluacion>>(EVALUACIONES_KEY, {})
+  return Object.values(all)
+    .filter(e => e.evaluadoUid === uid || e.evaluadorUid === uid)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+}
+
+export function demoObtenerEvaluacionesRecibidas(uid: string): DemoEvaluacion[] {
+  const all = load<Record<string, DemoEvaluacion>>(EVALUACIONES_KEY, {})
+  return Object.values(all)
+    .filter(e => e.evaluadoUid === uid)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+}
+
+export function demoCalcularReputacion(uid: string): { promedio: number; total: number } {
+  const evals = demoObtenerEvaluacionesRecibidas(uid)
+  if (evals.length === 0) return { promedio: 0, total: 0 }
+  const sum = evals.reduce((acc, e) => acc + e.estrellas, 0)
+  return { promedio: Math.round((sum / evals.length) * 10) / 10, total: evals.length }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -280,4 +345,6 @@ export function demoResetAll() {
   localStorage.removeItem(PERFILES_KEY)
   localStorage.removeItem(PERFILES_PROFUNDOS_KEY)
   localStorage.removeItem(PANORAMAS_KEY)
+  localStorage.removeItem(CONTACTOS_KEY)
+  localStorage.removeItem(EVALUACIONES_KEY)
 }
