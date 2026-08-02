@@ -161,42 +161,130 @@ Devuelve exactamente este formato:
   })
 
   const raw = data.choices[0].message.content.trim()
-  // Eliminar posible markdown ```json ... ```
   const jsonStr = raw.replace(/^```json\s*|\s*```$/g, '').trim()
   return JSON.parse(jsonStr)
 }
 
 // ═══════════════════════════════════════════════════════════════
-// 3. CHATBOT DE ONBOARDING — Conversación para detectar perfil
+// 3. CHATBOT DE ONBOARDING — Conversación por fases con control de turnos
 // ═══════════════════════════════════════════════════════════════
 
-const SYSTEM_ONBOARDING = `Eres "Panxi", el asistente de onboarding de Panoramix (app para encontrar compañía de confianza para panoramas, NO citas románticas).
+export type OnboardingPhase = 'apertura' | 'profundiza' | 'cruce' | 'cierre' | 'extraccion'
 
-Tu trabajo es conversar amigablemente con el usuario para entender su estilo de vida, intereses y preferencias sociales.
+const PHASE_PROMPTS: Record<OnboardingPhase, string> = {
+  apertura: `Eres "Panxi", asistente de onboarding de Panoramix (app de COMPAÑÍA SOCIAL, no citas románticas).
+
+ESTÁS EN FASE DE APERTURA (turnos 0-2).
+Tu objetivo: que el usuario describa su último fin de semana libre o día típico.
+REGLAS:
+- NO preguntes directamente "¿qué te gusta?". Pregunta "¿qué hiciste?"
+- Máximo 1 pregunta por mensaje. Conversa natural.
+- Si el usuario responde con menos de 5 palabras, pide que cuente más.
+- Si responde con más de 100 palabras, resume brevemente y continúa.
+- NO menciones que estás haciendo un perfil.
+- Sé cálido/a, usa chileno coloquial pero respetuoso.
+- Longitud máxima: 30 palabras.`,
+
+  profundiza: `Eres "Panxi", asistente de onboarding de Panoramix.
+
+ESTÁS EN FASE DE PROFUNDIZACIÓN (turnos 3-5).
+Ya sabes algo del usuario. Ahora profundiza en:
+- ¿Con quién suele salir? ¿Solo, amigos, familia?
+- ¿Qué tipo de lugares frecuenta?
+- ¿Cuánto suele gastar en una salida? (detecta de ejemplos, no preguntes directo)
+- ¿Tiene mascota?
 
 REGLAS:
-- NO hagas preguntas directas tipo formulario. Conversa naturalmente.
-- Detecta: qué hace en su tiempo libre, qué música le gusta, si es social o reservado, su presupuesto típico, si tiene mascota, etc.
-- NO menciones que estás haciendo un perfil. Solo conversa.
-- Cuando tengas suficiente información, di amablemente que ya puede comenzar a usar Panoramix.
-- Sé cálido/a pero profesional. Usa chileno coloquial pero respetuoso.
-- Máximo 2 preguntas por mensaje. No seas interrogatorio.`
+- Máximo 1 pregunta por mensaje.
+- No seas interrogatorio. Menciona algo de lo que ya dijo.
+- Si ya tienes suficiente info, ve a modo cierre.
+- Longitud máxima: 30 palabras.`,
+
+  cruce: `Eres "Panxi", asistente de onboarding de Panoramix.
+
+ESTÁS EN FASE DE CRUCE (turnos 6-7).
+Revisa qué datos te faltan y pregunta lo último necesario:
+- Presupuesto típico para salidas
+- Horario preferido (día, tarde, noche)
+- Comuna o zona donde vive/se mueve
+- ¿Algún panorama que NUNCA haría?
+
+REGLAS:
+- Solo 1 pregunta más.
+- Anticipa que ya casi terminan.
+- Longitud máxima: 25 palabras.`,
+
+  cierre: `Eres "Panxi", asistente de onboarding de Panoramix.
+
+ESTÁS EN FASE DE CIERRE (turno 8).
+Ya conversaste suficiente. Di amablemente:
+"¡Gracias por compartir! Ya tengo una buena idea de tu estilo. Déjame armar tu perfil..."
+
+NO hagas más preguntas. Este es el último mensaje antes de que se genere el perfil automáticamente.
+- Longitud máxima: 20 palabras.`,
+
+  extraccion: `Eres un analizador de perfiles sociales. Analiza esta conversación de onboarding y extrae un perfil estructurado.
+
+Responde SOLO un JSON válido con este formato exacto:
+{
+  "estilo_de_vida": "descripción breve (ej: social moderado, preferencia por planes culturales)",
+  "intereses": ["lista", "de", "intereses", "detectados"],
+  "nivel_sociabilidad": "bajo|moderado|alto",
+  "presupuesto_estimado": "rango en CLP o 'no detectado'",
+  "horario_preferido": "día|tarde|noche|mixto|no detectado",
+  "tipo_compania": "solo|amigos|familia|indiferente",
+  "dealbreakers": ["lista de panoramas que no haría"],
+  "comentario_compatibility": "frase sobre con qué tipo de personas sería más compatible"
+}`,
+}
 
 export async function chatOnboarding(
   mensajes: { role: 'user' | 'assistant'; content: string }[],
+  phase: OnboardingPhase,
   options?: { signal?: AbortSignal }
 ): Promise<string> {
   const data = await openAIFetch('/chat/completions', {
     model: DEFAULT_MODEL,
     messages: [
-      { role: 'system', content: SYSTEM_ONBOARDING },
+      { role: 'system', content: PHASE_PROMPTS[phase] },
       ...mensajes,
     ],
-    temperature: 0.8,
-    max_tokens: 500,
+    temperature: phase === 'apertura' ? 0.8 : phase === 'cierre' ? 0.3 : 0.6,
+    max_tokens: 250,
   }, options)
 
   return data.choices[0].message.content.trim()
+}
+
+export interface PerfilExtraido {
+  estilo_de_vida: string
+  intereses: string[]
+  nivel_sociabilidad: string
+  presupuesto_estimado: string
+  horario_preferido: string
+  tipo_compania: string
+  dealbreakers: string[]
+  comentario_compatibility: string
+}
+
+export async function extractProfileFromChat(
+  mensajes: { role: 'user' | 'assistant'; content: string }[]
+): Promise<PerfilExtraido> {
+  const historial = mensajes.map(m => `${m.role}: ${m.content}`).join('\n\n')
+
+  const data = await openAIFetch('/chat/completions', {
+    model: DEFAULT_MODEL,
+    messages: [
+      { role: 'system', content: PHASE_PROMPTS.extraccion },
+      { role: 'user', content: `Conversación completa:\n\n${historial}` },
+    ],
+    temperature: 0.2,
+    max_tokens: 400,
+  })
+
+  const raw = data.choices[0].message.content.trim()
+  const jsonStr = raw.replace(/^```json\s*|\s*```$/g, '').trim()
+  return JSON.parse(jsonStr)
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -206,7 +294,7 @@ export async function chatOnboarding(
 export interface ModeracionResult {
   aprobado: boolean
   motivo?: string
-  severidad: 'bajo' | 'medio' | 'alto'
+   severidad: 'bajo' | 'medio' | 'alto'
   categoria: 'citas_romanticas' | 'encuentros_sexuales' | 'spam' | 'seguro' | 'dudoso'
 }
 

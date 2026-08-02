@@ -131,53 +131,11 @@ export default function Home() {
                 Encuentra acompañantes de confianza para vivir experiencias juntos.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-base px-8">
-                      Crear mi primer panorama <ChevronRight className="w-4 h-4 ml-1" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>🎉 Crear un panorama</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">¿Qué quieres hacer?</label>
-                        <Input placeholder="Ej: Ir a concierto de Chayanne" className="mt-1" />
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">¿Dónde?</label>
-                          <Input placeholder="Comuna / Lugar" className="mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">¿Cuándo?</label>
-                          <Input placeholder="Fecha y hora" className="mt-1" />
-                        </div>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-slate-700">¿Qué buscas en esta salida?</label>
-                        <div className="flex flex-wrap gap-2 mt-2">
-                          {['Bailar', 'Conversar', 'Distraerme', 'Compartir', 'No importa'].map(v => (
-                            <Badge key={v} variant="outline" className="cursor-pointer hover:bg-teal-50 hover:border-teal-300">{v}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">Presupuesto</label>
-                          <Input placeholder="$0 - $100.000" className="mt-1" />
-                        </div>
-                        <div>
-                          <label className="text-sm font-medium text-slate-700">Compañía</label>
-                          <Input placeholder="Femenina / Masculina / Indistinto" className="mt-1" />
-                        </div>
-                      </div>
-                      <Button className="w-full bg-teal-600 hover:bg-teal-700">Publicar panorama</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
+                <Link to="/crear-panorama">
+                  <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-base px-8">
+                    Crear mi primer panorama <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                </Link>
                 <Button size="lg" variant="outline" className="text-base px-6">
                   Ver cómo funciona
                 </Button>

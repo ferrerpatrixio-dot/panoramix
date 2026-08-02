@@ -5,6 +5,8 @@ import EventosRM from './pages/EventosRM'
 import Perfil from './pages/Perfil'
 import PerfilProfundo from './pages/PerfilProfundo'
 import ChatOnboarding from './pages/ChatOnboarding'
+import MapaOnboarding from './pages/MapaOnboarding'
+import CrearPanorama from './pages/CrearPanorama'
 
 export default function App() {
   return (
@@ -15,6 +17,8 @@ export default function App() {
       <Route path="/perfil" element={<Perfil />} />
       <Route path="/perfil-profundo" element={<PerfilProfundo />} />
       <Route path="/chat-onboarding" element={<ChatOnboarding />} />
+      <Route path="/mapa-onboarding" element={<MapaOnboarding />} />
+      <Route path="/crear-panorama" element={<CrearPanorama />} />
     </Routes>
   )
 }
