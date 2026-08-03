@@ -8,8 +8,10 @@ import PerfilProfundo from './pages/PerfilProfundo'
 import ChatOnboarding from './pages/ChatOnboarding'
 import MapaOnboarding from './pages/MapaOnboarding'
 import CrearPanorama from './pages/CrearPanorama'
+import FeedPanoramas from './pages/FeedPanoramas'
 import MisPanoramas from './pages/MisPanoramas'
 import Evaluacion from './pages/Evaluacion'
+import ChatMatch from './pages/ChatMatch'
 import Admin from './pages/Admin'
 import Terminos from './pages/Terminos'
 import SosButton from './components/SosButton'
@@ -21,6 +23,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/feed" element={<FeedPanoramas />} />
         <Route path="/modelo-negocio" element={<BusinessModel />} />
         <Route path="/eventos-rm" element={<EventosRM />} />
         <Route path="/perfil" element={<Perfil />} />
@@ -30,6 +33,7 @@ export default function App() {
         <Route path="/crear-panorama" element={<CrearPanorama />} />
         <Route path="/mis-panoramas" element={<MisPanoramas />} />
         <Route path="/evaluar" element={<Evaluacion />} />
+        <Route path="/chat/:panoramaId/:matchUserId" element={<ChatMatch />} />
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
         <Route path="/terminos" element={<Terminos />} />
       </Routes>

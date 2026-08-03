@@ -99,6 +99,7 @@ export default function Home() {
             <a href="#como-funciona" className="hover:text-teal-600 transition">Cómo funciona</a>
             <a href="#seguridad" className="hover:text-teal-600 transition">Seguridad</a>
             <a href="#precios" className="hover:text-teal-600 transition">Precios</a>
+            <Link to="/feed" className="hover:text-teal-600 transition">Descubrir</Link>
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
             <Link to="/chat-onboarding" className="hover:text-teal-600 transition">Conoce a Panxi</Link>

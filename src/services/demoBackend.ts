@@ -40,6 +40,17 @@ export interface DemoReclamo {
   createdAt: string
 }
 
+export interface DemoMensajeChat {
+  id: string
+  matchKey: string        // panoramaId_matchUserId
+  remitenteUid: string    // uid del que envía
+  remitenteNombre: string
+  contenido: string
+  tipo: 'texto' | 'sistema'
+  leido: boolean
+  createdAt: string
+}
+
 export interface DemoUser {
   uid: string
   email: string
@@ -106,8 +117,17 @@ export interface DemoPanorama {
   companiasPref?: string
   entradaComprada?: string
   descripcionGenerada?: string
-  estado: 'activo' | 'cerrado' | 'completado'
+  estado: 'activo' | 'cerrado' | 'completado' | 'no_disponible'
   matches: DemoMatch[]
+  interesados: DemoInteresado[]
+  seleccionadoId?: string
+  createdAt: string
+}
+
+export interface DemoInteresado {
+  uid: string
+  nombre: string
+  compatibilidad: number
   createdAt: string
 }
 
@@ -131,6 +151,7 @@ const PANORAMAS_KEY = 'demo_panoramas'
 const CONTACTOS_KEY = 'demo_contactos'
 const EVALUACIONES_KEY = 'demo_evaluaciones'
 const RECLAMOS_KEY = 'demo_reclamos'
+const CHAT_KEY = 'demo_chat'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -235,7 +256,7 @@ export function demoObtenerPerfilProfundo(uid: string): DemoPerfilProfundo | nul
 // PANORAMAS
 // ═══════════════════════════════════════════════════════════════
 
-export function demoCrearPanorama(uid: string, data: Omit<DemoPanorama, 'id' | 'uid' | 'matches' | 'createdAt' | 'estado'>): DemoPanorama {
+export function demoCrearPanorama(uid: string, data: Omit<DemoPanorama, 'id' | 'uid' | 'matches' | 'interesados' | 'createdAt' | 'estado'>): DemoPanorama {
   const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
   const id = generarId()
   const matches = generarMatchesSimulados(data)
@@ -245,6 +266,7 @@ export function demoCrearPanorama(uid: string, data: Omit<DemoPanorama, 'id' | '
     uid,
     estado: 'activo',
     matches,
+    interesados: [],
     createdAt: new Date().toISOString(),
   }
   panoramas[id] = panorama
@@ -298,6 +320,107 @@ function generarMatchesSimulados(_data: any): DemoMatch[] {
     compatibilidad: Math.floor(Math.random() * 30) + 65,
     createdAt: new Date(Date.now() - i * 60000).toISOString(),
   }))
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEED PERSONALIZADO — Descubrir panoramas de otros
+// ═══════════════════════════════════════════════════════════════
+
+export function demoObtenerFeedPersonalizado(uid: string): DemoPanorama[] {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const perfil = demoObtenerPerfil(uid)
+  const todos = Object.values(panoramas)
+    .filter(p => p.uid !== uid && p.estado === 'activo')
+
+  // Ordenar por "compatibilidad" simulada: si el panorama coincide con intereses del perfil
+  const conScore = todos.map(p => {
+    let score = 50 // base
+    if (perfil) {
+      // Coincidencia de categorías
+      if (perfil.categoriasSel && p.actividad) {
+        const actLower = p.actividad.toLowerCase()
+        const matchCat = perfil.categoriasSel.some(c => actLower.includes(c.toLowerCase()))
+        if (matchCat) score += 20
+      }
+      // Coincidencia de comuna
+      if (perfil.comunasSel && p.lugar) {
+        const matchComuna = perfil.comunasSel.some(c => p.lugar.toLowerCase().includes(c.toLowerCase()))
+        if (matchComuna) score += 15
+      }
+      // Coincidencia de compañía preferida
+      if (perfil.companiasPref && p.companiasPref) {
+        if (perfil.companiasPref === p.companiasPref || p.companiasPref === 'Me es indiferente') {
+          score += 10
+        }
+      }
+    }
+    // Si ya expresó interés, bajar prioridad (para no mostrarlo arriba)
+    const yaInteresado = p.interesados?.some(i => i.uid === uid)
+    if (yaInteresado) score -= 30
+    return { p, score }
+  })
+
+  return conScore
+    .sort((a, b) => b.score - a.score)
+    .map(x => x.p)
+}
+
+export function demoExpresarInteres(panoramaId: string, uid: string, nombre: string): boolean {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const p = panoramas[panoramaId]
+  if (!p || p.estado !== 'activo') return false
+  if (p.interesados.some(i => i.uid === uid)) return false // ya interesado
+  const perfil = demoObtenerPerfil(uid)
+  // Calcular compatibilidad simulada
+  let compat = 65
+  if (perfil) {
+    if (perfil.categoriasSel && p.actividad) {
+      const actLower = p.actividad.toLowerCase()
+      if (perfil.categoriasSel.some(c => actLower.includes(c.toLowerCase()))) compat += 15
+    }
+    if (perfil.comunasSel && p.lugar) {
+      if (perfil.comunasSel.some(c => p.lugar.toLowerCase().includes(c.toLowerCase()))) compat += 10
+    }
+  }
+  compat = Math.min(98, compat + Math.floor(Math.random() * 10))
+  p.interesados.push({ uid, nombre, compatibilidad: compat, createdAt: new Date().toISOString() })
+  save(PANORAMAS_KEY, panoramas)
+  return true
+}
+
+export function demoObtenerInteresados(panoramaId: string): DemoInteresado[] {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const p = panoramas[panoramaId]
+  return p ? p.interesados : []
+}
+
+export function demoSeleccionarCompanero(panoramaId: string, uidSeleccionado: string): boolean {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const p = panoramas[panoramaId]
+  if (!p || p.estado !== 'activo') return false
+  if (!p.interesados.some(i => i.uid === uidSeleccionado)) return false
+  p.seleccionadoId = uidSeleccionado
+  p.estado = 'no_disponible'
+  // Crear match para el seleccionado
+  const seleccionado = p.interesados.find(i => i.uid === uidSeleccionado)
+  if (seleccionado) {
+    p.matches.push({
+      matchUserId: uidSeleccionado,
+      matchUserName: seleccionado.nombre,
+      estado: 'aceptado',
+      compatibilidad: seleccionado.compatibilidad,
+      createdAt: new Date().toISOString(),
+    })
+  }
+  save(PANORAMAS_KEY, panoramas)
+  return true
+}
+
+export function demoObtenerPanoramasConInteres(uid: string): DemoPanorama[] {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  return Object.values(panoramas)
+    .filter(p => p.interesados.some(i => i.uid === uid))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -398,6 +521,58 @@ export function demoResponderReclamo(id: string, respuesta: string) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// CHAT 1:1 ENTRE MATCHED USERS
+// ═══════════════════════════════════════════════════════════════
+
+function chatKey(panoramaId: string, matchUserId: string): string {
+  return `${panoramaId}_${matchUserId}`
+}
+
+export function demoGuardarMensaje(
+  panoramaId: string,
+  matchUserId: string,
+  remitenteUid: string,
+  remitenteNombre: string,
+  contenido: string,
+  tipo: DemoMensajeChat['tipo'] = 'texto'
+): DemoMensajeChat {
+  const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+  const key = chatKey(panoramaId, matchUserId)
+  if (!all[key]) all[key] = []
+  const msg: DemoMensajeChat = {
+    id: generarId(),
+    matchKey: key,
+    remitenteUid,
+    remitenteNombre,
+    contenido,
+    tipo,
+    leido: false,
+    createdAt: new Date().toISOString(),
+  }
+  all[key].push(msg)
+  save(CHAT_KEY, all)
+  return msg
+}
+
+export function demoObtenerMensajes(panoramaId: string, matchUserId: string): DemoMensajeChat[] {
+  const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+  const key = chatKey(panoramaId, matchUserId)
+  return (all[key] || []).sort((a, b) =>
+    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  )
+}
+
+export function demoMarcarLeido(panoramaId: string, matchUserId: string, uidLector: string) {
+  const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+  const key = chatKey(panoramaId, matchUserId)
+  if (!all[key]) return
+  all[key] = all[key].map(m =>
+    m.remitenteUid !== uidLector ? { ...m, leido: true } : m
+  )
+  save(CHAT_KEY, all)
+}
+
+// ═══════════════════════════════════════════════════════════════
 // RESET (para testing)
 // ═══════════════════════════════════════════════════════════════
 
@@ -410,4 +585,5 @@ export function demoResetAll() {
   localStorage.removeItem(CONTACTOS_KEY)
   localStorage.removeItem(EVALUACIONES_KEY)
   localStorage.removeItem(RECLAMOS_KEY)
+  localStorage.removeItem(CHAT_KEY)
 }
