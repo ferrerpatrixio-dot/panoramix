@@ -6,6 +6,7 @@ import {
   demoObtenerMensajes,
   demoGuardarMensaje,
   demoMarcarLeido,
+  demoObtenerUsuario,
   type DemoMensajeChat,
 } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
@@ -50,8 +51,25 @@ export default function ChatMatch() {
     const p = demoObtenerPanorama(panoramaId)
     if (p) {
       setPanorama(p)
-      const m = p.matches.find(x => x.matchUserId === matchUserId)
-      if (m) setMatchInfo(m)
+      const esDueño = user.uid === p.uid
+      if (esDueño) {
+        // Soy el dueño: el otro es el seleccionado
+        const m = p.matches.find(x => x.matchUserId === matchUserId)
+        if (m) setMatchInfo(m)
+      } else {
+        // Soy el seleccionado: el otro es el dueño
+        const dueño = demoObtenerUsuario(p.uid)
+        const miInteres = p.interesados.find(i => i.uid === user.uid)
+        if (dueño) {
+          setMatchInfo({
+            matchUserId: p.uid,
+            matchUserName: dueño.displayName || dueño.email,
+            estado: 'aceptado',
+            compatibilidad: miInteres?.compatibilidad || 0,
+            createdAt: p.createdAt,
+          })
+        }
+      }
     }
 
     cargarMensajes()

@@ -472,6 +472,13 @@ export function demoListarUsuarios(): DemoUser[] {
   }))
 }
 
+export function demoObtenerUsuario(uid: string): DemoUser | null {
+  const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
+  const u = users[uid]
+  if (!u) return null
+  return { uid, email: u.email, displayName: u.displayName, createdAt: u.createdAt, activo: u.activo !== false }
+}
+
 export function demoDesactivarUsuario(uid: string) {
   const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
   if (users[uid]) {
