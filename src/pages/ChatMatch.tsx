@@ -18,6 +18,7 @@ import {
   ChevronLeft, Send, Shield, MapPin, Calendar, User,
   CheckCircle, AlertTriangle, MessageCircle,
 } from 'lucide-react'
+import NotificacionesBadge from '@/components/NotificacionesBadge'
 
 const SUGERENCIAS = [
   '¡Hola! ¿Ya tienes entrada para el evento?',
@@ -147,7 +148,8 @@ export default function ChatMatch() {
               <span className="truncate">{panorama.actividad}</span>
             </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            <NotificacionesBadge />
             <Link to={`/evaluar?panorama=${panorama.id}&match=${matchInfo.matchUserId}&nombre=${encodeURIComponent(matchInfo.matchUserName)}`}>
               <Button variant="outline" size="sm" className="text-xs h-8">Evaluar</Button>
             </Link>
