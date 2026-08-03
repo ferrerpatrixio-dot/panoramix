@@ -8,6 +8,7 @@ import {
   type DemoPanorama,
 } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
+import NotificacionesBadge from '@/components/NotificacionesBadge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -111,6 +112,7 @@ export default function FeedPanoramas() {
             <Link to="/mis-panoramas" className="hover:text-teal-600 transition">Mis Panoramas</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
           </div>
+            <NotificacionesBadge />
         </div>
       </nav>
 

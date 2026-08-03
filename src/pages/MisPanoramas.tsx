@@ -11,6 +11,7 @@ import {
   type DemoInteresado,
 } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
+import NotificacionesBadge from '@/components/NotificacionesBadge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -88,6 +89,7 @@ export default function MisPanoramas() {
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
             <Link to="/mis-panoramas" className="text-teal-600">Mis Panoramas</Link>
+            <NotificacionesBadge />
           </div>
         </div>
       </nav>

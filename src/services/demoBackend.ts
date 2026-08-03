@@ -579,6 +579,58 @@ export function demoMarcarLeido(panoramaId: string, matchUserId: string, uidLect
   save(CHAT_KEY, all)
 }
 
+export function demoContarMensajesNoLeidos(uid: string): number {
+  const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+  let count = 0
+  for (const msgs of Object.values(all)) {
+    for (const msg of msgs) {
+      if (msg.remitenteUid !== uid && !msg.leido) count++
+    }
+  }
+  return count
+}
+
+export function demoObtenerResumenChats(uid: string): { panoramaId: string; matchUserId: string; actividad: string; otroNombre: string; noLeidos: number; ultimoMensaje: string; ultimoAt: string }[] {
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const allChats = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+  const resumen: any[] = []
+
+  for (const p of Object.values(panoramas)) {
+    const soyDueño = p.uid === uid
+    const soySeleccionado = p.seleccionadoId === uid
+    if (!soyDueño && !soySeleccionado) continue
+
+    const seleccionadoId = p.seleccionadoId
+    if (!seleccionadoId) continue
+
+    const key = chatKey(p.id, seleccionadoId)
+    const msgs = allChats[key] || []
+    const noLeidos = msgs.filter(m => m.remitenteUid !== uid && !m.leido).length
+    const ultimo = msgs[msgs.length - 1]
+
+    let otroNombre = ''
+    if (soyDueño) {
+      const match = p.matches.find(m => m.matchUserId === seleccionadoId)
+      otroNombre = match?.matchUserName || 'Compañero'
+    } else {
+      const dueño = demoObtenerUsuario(p.uid)
+      otroNombre = dueño?.displayName || dueño?.email || 'Creador'
+    }
+
+    resumen.push({
+      panoramaId: p.id,
+      matchUserId: seleccionadoId,
+      actividad: p.actividad,
+      otroNombre,
+      noLeidos,
+      ultimoMensaje: ultimo?.contenido || '',
+      ultimoAt: ultimo?.createdAt || p.createdAt,
+    })
+  }
+
+  return resumen.sort((a, b) => new Date(b.ultimoAt).getTime() - new Date(a.ultimoAt).getTime())
+}
+
 // ═══════════════════════════════════════════════════════════════
 // RESET (para testing)
 // ═══════════════════════════════════════════════════════════════

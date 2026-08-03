@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import NotificacionesBadge from '@/components/NotificacionesBadge'
 import {
   Users, Shield, MapPin, Calendar, Heart, Star, Zap, Check,
   Music, Dog, Coffee, Ticket, AlertTriangle, MessageCircle, ChevronRight,
@@ -108,6 +109,7 @@ export default function Home() {
           <div className="flex items-center gap-2">
             {user ? (
               <div className="flex items-center gap-3">
+                <NotificacionesBadge />
                 <div className="flex items-center gap-1.5 text-sm text-slate-700">
                   <User className="w-4 h-4 text-teal-600" />
                   <span className="hidden sm:inline">{user.email}</span>
