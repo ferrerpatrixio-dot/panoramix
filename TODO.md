@@ -1,7 +1,7 @@
 # TODO — Estado de Pendientes
 
 > Lista de tareas pendientes, en progreso y completadas.  
-> **Actualizado:** 2026-08-02
+> **Actualizado:** 2026-08-03
 
 ---
 
@@ -28,6 +28,8 @@
 - [x] Conectar demo chat onboarding desde home
 - [x] Agregar ~20 perfiles extra al seed (total 29 usuarios)
 - [x] Generar documentación de proyecto para traspaso entre LLM
+- [x] Dashboard de analytics para admin (con recharts)
+- [x] Sistema de notificaciones in-app (toasts + centro de notificaciones)
 
 ---
 
@@ -53,8 +55,7 @@
 - [ ] SEO: meta tags, sitemap, robots.txt
 - [ ] Google Ads / Meta Ads (pixels de tracking)
 - [ ] Cron de scraping de eventos desde productoras (Passline, Puntoticket, etc.)
-- [ ] Notificaciones push / email
-- [ ] Dashboard de analytics para admin
+- [ ] Notificaciones push nativas / email
 
 ### Baja Prioridad
 - [ ] App móvil (React Native o PWA)
