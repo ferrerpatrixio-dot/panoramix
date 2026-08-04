@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router'
 import { AuthProvider } from './contexts/AuthContext'
+import { Toaster } from '@/components/ui/sonner'
 import Home from './pages/Home'
 import BusinessModel from './pages/BusinessModel'
 import EventosRM from './pages/EventosRM'
@@ -20,6 +21,7 @@ import SosButton from './components/SosButton'
 import DemoResetButton from './components/DemoResetButton'
 import AdminRoute from './components/AdminRoute'
 import OnboardingGuard from './components/OnboardingGuard'
+import NotificacionesToastListener from './components/NotificacionesToastListener'
 
 export default function App() {
   return (
@@ -49,6 +51,8 @@ export default function App() {
       </Routes>
       <SosButton />
       <DemoResetButton />
+      <NotificacionesToastListener />
+      <Toaster position="top-right" closeButton richColors />
     </AuthProvider>
   )
 }

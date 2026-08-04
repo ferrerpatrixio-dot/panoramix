@@ -1,33 +1,69 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@/contexts/AuthContext'
-import { demoContarMensajesNoLeidos, demoObtenerResumenChats } from '@/services/demoBackend'
+import {
+  demoObtenerNotificaciones, demoMarcarNotificacionLeida,
+  demoMarcarTodasNotificacionesLeidas, type DemoNotificacion,
+} from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Badge } from '@/components/ui/badge'
-import { Bell, MessageCircle, ChevronRight } from 'lucide-react'
+import {
+  Bell, Heart, CheckCircle, MessageCircle, Clock, AlertCircle,
+  ChevronRight, Eye
+} from 'lucide-react'
+
+const ICONOS_TIPO: Record<DemoNotificacion['tipo'], React.ReactNode> = {
+  interes_panorama: <Heart className="w-4 h-4 text-rose-500" />,
+  seleccionado_companero: <CheckCircle className="w-4 h-4 text-teal-600" />,
+  nuevo_mensaje: <MessageCircle className="w-4 h-4 text-blue-500" />,
+  recordatorio: <Clock className="w-4 h-4 text-amber-500" />,
+  sistema: <AlertCircle className="w-4 h-4 text-slate-500" />,
+}
+
+const COLORES_TIPO: Record<DemoNotificacion['tipo'], string> = {
+  interes_panorama: 'bg-rose-50 text-rose-700 border-rose-100',
+  seleccionado_companero: 'bg-teal-50 text-teal-700 border-teal-100',
+  nuevo_mensaje: 'bg-blue-50 text-blue-700 border-blue-100',
+  recordatorio: 'bg-amber-50 text-amber-700 border-amber-100',
+  sistema: 'bg-slate-50 text-slate-700 border-slate-100',
+}
 
 export default function NotificacionesBadge() {
   const { user } = useAuth()
-  const [count, setCount] = useState(0)
-  const [chats, setChats] = useState<any[]>([])
+  const [notifs, setNotifs] = useState<DemoNotificacion[]>([])
   const [open, setOpen] = useState(false)
 
   const refresh = useCallback(() => {
     if (!user) return
-    setCount(demoContarMensajesNoLeidos(user.uid))
-    setChats(demoObtenerResumenChats(user.uid).filter(c => c.noLeidos > 0))
+    setNotifs(demoObtenerNotificaciones(user.uid))
   }, [user])
 
   useEffect(() => {
     refresh()
-    const id = setInterval(refresh, 3000)
+    const id = setInterval(refresh, 5000)
     return () => clearInterval(id)
   }, [refresh])
 
   if (!user) return null
 
-  const chatsConNotificacion = chats
+  const noLeidas = notifs.filter(n => !n.leido)
+  const count = noLeidas.length
+
+  const handleMarcarLeida = (id: string) => {
+    demoMarcarNotificacionLeida(id)
+    refresh()
+  }
+
+  const handleMarcarTodas = () => {
+    demoMarcarTodasNotificacionesLeidas(user.uid)
+    refresh()
+  }
+
+  const linkParaNotif = (n: DemoNotificacion): string => {
+    if (n.panoramaId && n.matchUserId) return `/chat/${n.panoramaId}/${n.matchUserId}`
+    if (n.panoramaId) return `/mis-panoramas`
+    return '/feed'
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -42,42 +78,63 @@ export default function NotificacionesBadge() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-3 border-b bg-slate-50">
-          <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
-          <p className="text-xs text-slate-500">
-            {count === 0 ? 'No tienes mensajes nuevos' : `${count} mensaje${count !== 1 ? 's' : ''} sin leer`}
-          </p>
+      <PopoverContent className="w-96 p-0" align="end">
+        <div className="p-3 border-b bg-slate-50 flex items-center justify-between">
+          <div>
+            <p className="text-sm font-semibold text-slate-800">Notificaciones</p>
+            <p className="text-xs text-slate-500">
+              {count === 0 ? 'No tienes notificaciones nuevas' : `${count} sin leer`}
+            </p>
+          </div>
+          {count > 0 && (
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1 text-slate-500" onClick={handleMarcarTodas}>
+              <Eye className="w-3 h-3" /> Marcar todas
+            </Button>
+          )}
         </div>
-        <div className="max-h-72 overflow-y-auto">
-          {chatsConNotificacion.length === 0 ? (
+        <div className="max-h-80 overflow-y-auto">
+          {notifs.length === 0 ? (
             <div className="p-6 text-center">
-              <MessageCircle className="w-8 h-8 text-slate-200 mx-auto mb-2" />
+              <Bell className="w-8 h-8 text-slate-200 mx-auto mb-2" />
               <p className="text-sm text-slate-500">Todo al día</p>
-              <p className="text-xs text-slate-400">Cuando tengas mensajes nuevos aparecerán aquí</p>
+              <p className="text-xs text-slate-400">Cuando pase algo importante aparecerá aquí</p>
             </div>
           ) : (
             <div className="divide-y">
-              {chatsConNotificacion.map(c => (
-                <Link
-                  key={c.panoramaId}
-                  to={`/chat/${c.panoramaId}/${c.matchUserId}`}
-                  onClick={() => setOpen(false)}
-                  className="flex items-start gap-3 p-3 hover:bg-slate-50 transition"
+              {notifs.map(n => (
+                <div
+                  key={n.id}
+                  className={`flex items-start gap-3 p-3 transition ${n.leido ? 'opacity-60' : 'bg-white hover:bg-slate-50'}`}
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center text-teal-700 font-bold text-xs shrink-0 mt-0.5">
-                    {c.otroNombre[0]}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${COLORES_TIPO[n.tipo].split(' ')[0]}`}>
+                    {ICONOS_TIPO[n.tipo]}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-medium text-slate-900 truncate">{c.otroNombre}</p>
-                      <Badge className="bg-red-100 text-red-700 text-[10px] px-1.5 py-0 shrink-0">{c.noLeidos}</Badge>
-                    </div>
-                    <p className="text-xs text-slate-500 truncate">{c.actividad}</p>
-                    <p className="text-xs text-slate-400 truncate mt-0.5">{c.ultimoMensaje}</p>
+                    <p className="text-sm font-medium text-slate-900">{n.titulo}</p>
+                    <p className="text-xs text-slate-500 leading-relaxed">{n.mensaje}</p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      {new Date(n.createdAt).toLocaleString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
-                  <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-2" />
-                </Link>
+                  <div className="flex flex-col gap-1 items-end">
+                    {!n.leido && (
+                      <button
+                        onClick={() => handleMarcarLeida(n.id)}
+                        className="w-2.5 h-2.5 rounded-full bg-teal-500 hover:bg-teal-600"
+                        title="Marcar como leída"
+                      />
+                    )}
+                    {n.panoramaId && (
+                      <Link
+                        to={linkParaNotif(n)}
+                        onClick={() => setOpen(false)}
+                        className="text-slate-300 hover:text-teal-600"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </Link>
+                    )}
+                  </div>
+                </div>
               ))}
             </div>
           )}

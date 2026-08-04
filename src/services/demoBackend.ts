@@ -179,6 +179,18 @@ export interface DemoMetricas {
   topActividades: { actividad: string; cantidad: number }[]
 }
 
+export interface DemoNotificacion {
+  id: string
+  uidDestino: string
+  tipo: 'interes_panorama' | 'seleccionado_companero' | 'nuevo_mensaje' | 'recordatorio' | 'sistema'
+  titulo: string
+  mensaje: string
+  panoramaId?: string
+  matchUserId?: string
+  leido: boolean
+  createdAt: string
+}
+
 // ═══════════════════════════════════════════════════════════════
 // KEYS
 // ═══════════════════════════════════════════════════════════════
@@ -192,6 +204,7 @@ const CONTACTOS_KEY = 'demo_contactos'
 const EVALUACIONES_KEY = 'demo_evaluaciones'
 const RECLAMOS_KEY = 'demo_reclamos'
 const CHAT_KEY = 'demo_chat'
+const NOTIFICACIONES_KEY = 'demo_notificaciones'
 
 // ═══════════════════════════════════════════════════════════════
 // HELPERS
@@ -414,6 +427,16 @@ export function demoExpresarInteres(panoramaId: string, uid: string, nombre: str
   compat = Math.min(98, compat + Math.floor(Math.random() * 10))
   p.interesados.push({ uid, nombre, compatibilidad: compat, createdAt: new Date().toISOString() })
   save(PANORAMAS_KEY, panoramas)
+
+  // Notificar al dueño del panorama
+  demoCrearNotificacion({
+    uidDestino: p.uid,
+    tipo: 'interes_panorama',
+    titulo: 'Nuevo interés en tu panorama',
+    mensaje: `${nombre} quiere acompañarte a "${p.actividad}". ¡Revisa tu panorama!`,
+    panoramaId: p.id,
+  })
+
   return true
 }
 
@@ -441,6 +464,17 @@ export function demoSeleccionarCompanero(panoramaId: string, uidSeleccionado: st
     })
   }
   save(PANORAMAS_KEY, panoramas)
+
+  // Notificar al seleccionado
+  demoCrearNotificacion({
+    uidDestino: uidSeleccionado,
+    tipo: 'seleccionado_companero',
+    titulo: '¡Fuiste seleccionado!',
+    mensaje: `El creador te eligió como compañero para "${p.actividad}". ¡Abre el chat para coordinar!`,
+    panoramaId: p.id,
+    matchUserId: p.uid,
+  })
+
   return true
 }
 
@@ -562,6 +596,22 @@ export function demoGuardarMensaje(
   }
   all[key].push(msg)
   save(CHAT_KEY, all)
+
+  // Notificar al destinatario
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const p = panoramas[panoramaId]
+  if (p) {
+    const destinoUid = remitenteUid === p.uid ? matchUserId : p.uid
+    demoCrearNotificacion({
+      uidDestino: destinoUid,
+      tipo: 'nuevo_mensaje',
+      titulo: `Nuevo mensaje de ${remitenteNombre}`,
+      mensaje: contenido.slice(0, 80) + (contenido.length > 80 ? '...' : ''),
+      panoramaId,
+      matchUserId: remitenteUid,
+    })
+  }
+
   return msg
 }
 
@@ -698,6 +748,47 @@ export function demoObtenerMetricas(): DemoMetricas {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// NOTIFICACIONES
+// ═══════════════════════════════════════════════════════════════
+
+export function demoCrearNotificacion(data: Omit<DemoNotificacion, 'id' | 'createdAt' | 'leido'>): DemoNotificacion {
+  const all = load<Record<string, DemoNotificacion>>(NOTIFICACIONES_KEY, {})
+  const id = generarId()
+  const notif: DemoNotificacion = { ...data, id, leido: false, createdAt: new Date().toISOString() }
+  all[id] = notif
+  save(NOTIFICACIONES_KEY, all)
+  return notif
+}
+
+export function demoObtenerNotificaciones(uid: string): DemoNotificacion[] {
+  const all = load<Record<string, DemoNotificacion>>(NOTIFICACIONES_KEY, {})
+  return Object.values(all)
+    .filter(n => n.uidDestino === uid)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+}
+
+export function demoMarcarNotificacionLeida(id: string) {
+  const all = load<Record<string, DemoNotificacion>>(NOTIFICACIONES_KEY, {})
+  if (all[id]) { all[id].leido = true; save(NOTIFICACIONES_KEY, all) }
+}
+
+export function demoContarNotificacionesNoLeidas(uid: string): number {
+  return demoObtenerNotificaciones(uid).filter(n => !n.leido).length
+}
+
+export function demoMarcarTodasNotificacionesLeidas(uid: string) {
+  const all = load<Record<string, DemoNotificacion>>(NOTIFICACIONES_KEY, {})
+  let changed = false
+  for (const n of Object.values(all)) {
+    if (n.uidDestino === uid && !n.leido) {
+      n.leido = true
+      changed = true
+    }
+  }
+  if (changed) save(NOTIFICACIONES_KEY, all)
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PERFIL PÚBLICO
 // ═══════════════════════════════════════════════════════════════
 
@@ -735,4 +826,5 @@ export function demoResetAll() {
   localStorage.removeItem(EVALUACIONES_KEY)
   localStorage.removeItem(RECLAMOS_KEY)
   localStorage.removeItem(CHAT_KEY)
+  localStorage.removeItem(NOTIFICACIONES_KEY)
 }
