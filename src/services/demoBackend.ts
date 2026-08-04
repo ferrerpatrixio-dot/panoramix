@@ -42,8 +42,8 @@ export interface DemoReclamo {
 
 export interface DemoMensajeChat {
   id: string
-  matchKey: string        // panoramaId_matchUserId
-  remitenteUid: string    // uid del que envía
+  matchKey: string
+  remitenteUid: string
   remitenteNombre: string
   contenido: string
   tipo: 'texto' | 'sistema'
@@ -137,6 +137,22 @@ export interface DemoMatch {
   estado: 'pendiente' | 'aceptado' | 'rechazado'
   compatibilidad: number
   createdAt: string
+}
+
+export interface DemoPerfilPublico {
+  compatibilidad: number
+  categoriasSel?: string[]
+  presupuesto?: string
+  companiasPref?: string
+  nuncaHaria?: string
+  frecuenciaSocial?: string
+  comunasSel?: string[]
+  disponibilidad?: string[]
+  temasEntusiasman?: string
+  temasEvitar?: string
+  llegarEvento?: string
+  conversar?: string
+  rol?: string
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -323,55 +339,44 @@ function generarMatchesSimulados(_data: any): DemoMatch[] {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// FEED PERSONALIZADO — Descubrir panoramas de otros
+// FEED PERSONALIZADO
 // ═══════════════════════════════════════════════════════════════
 
 export function demoObtenerFeedPersonalizado(uid: string): DemoPanorama[] {
   const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
   const perfil = demoObtenerPerfil(uid)
-  const todos = Object.values(panoramas)
-    .filter(p => p.uid !== uid && p.estado === 'activo')
+  const todos = Object.values(panoramas).filter(p => p.uid !== uid && p.estado === 'activo')
 
-  // Ordenar por "compatibilidad" simulada: si el panorama coincide con intereses del perfil
   const conScore = todos.map(p => {
-    let score = 50 // base
+    let score = 50
     if (perfil) {
-      // Coincidencia de categorías
       if (perfil.categoriasSel && p.actividad) {
         const actLower = p.actividad.toLowerCase()
         const matchCat = perfil.categoriasSel.some(c => actLower.includes(c.toLowerCase()))
         if (matchCat) score += 20
       }
-      // Coincidencia de comuna
       if (perfil.comunasSel && p.lugar) {
         const matchComuna = perfil.comunasSel.some(c => p.lugar.toLowerCase().includes(c.toLowerCase()))
         if (matchComuna) score += 15
       }
-      // Coincidencia de compañía preferida
       if (perfil.companiasPref && p.companiasPref) {
-        if (perfil.companiasPref === p.companiasPref || p.companiasPref === 'Me es indiferente') {
-          score += 10
-        }
+        if (perfil.companiasPref === p.companiasPref || p.companiasPref === 'Me es indiferente') score += 10
       }
     }
-    // Si ya expresó interés, bajar prioridad (para no mostrarlo arriba)
     const yaInteresado = p.interesados?.some(i => i.uid === uid)
     if (yaInteresado) score -= 30
     return { p, score }
   })
 
-  return conScore
-    .sort((a, b) => b.score - a.score)
-    .map(x => x.p)
+  return conScore.sort((a, b) => b.score - a.score).map(x => x.p)
 }
 
 export function demoExpresarInteres(panoramaId: string, uid: string, nombre: string): boolean {
   const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
   const p = panoramas[panoramaId]
   if (!p || p.estado !== 'activo') return false
-  if (p.interesados.some(i => i.uid === uid)) return false // ya interesado
+  if (p.interesados.some(i => i.uid === uid)) return false
   const perfil = demoObtenerPerfil(uid)
-  // Calcular compatibilidad simulada
   let compat = 65
   if (perfil) {
     if (perfil.categoriasSel && p.actividad) {
@@ -401,7 +406,6 @@ export function demoSeleccionarCompanero(panoramaId: string, uidSeleccionado: st
   if (!p.interesados.some(i => i.uid === uidSeleccionado)) return false
   p.seleccionadoId = uidSeleccionado
   p.estado = 'no_disponible'
-  // Crear match para el seleccionado
   const seleccionado = p.interesados.find(i => i.uid === uidSeleccionado)
   if (seleccionado) {
     p.matches.push({
@@ -464,11 +468,7 @@ export function demoCalcularReputacion(uid: string): { promedio: number; total: 
 export function demoListarUsuarios(): DemoUser[] {
   const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
   return Object.entries(users).map(([uid, u]) => ({
-    uid,
-    email: u.email,
-    displayName: u.displayName,
-    createdAt: u.createdAt,
-    activo: u.activo !== false,
+    uid, email: u.email, displayName: u.displayName, createdAt: u.createdAt, activo: u.activo !== false,
   }))
 }
 
@@ -481,18 +481,12 @@ export function demoObtenerUsuario(uid: string): DemoUser | null {
 
 export function demoDesactivarUsuario(uid: string) {
   const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
-  if (users[uid]) {
-    users[uid].activo = false
-    save(USERS_KEY, users)
-  }
+  if (users[uid]) { users[uid].activo = false; save(USERS_KEY, users) }
 }
 
 export function demoActivarUsuario(uid: string) {
   const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
-  if (users[uid]) {
-    users[uid].activo = true
-    save(USERS_KEY, users)
-  }
+  if (users[uid]) { users[uid].activo = true; save(USERS_KEY, users) }
 }
 
 export function demoObtenerTodasEvaluaciones(): DemoEvaluacion[] {
@@ -520,15 +514,11 @@ export function demoObtenerReclamos(): DemoReclamo[] {
 
 export function demoResponderReclamo(id: string, respuesta: string) {
   const all = load<Record<string, DemoReclamo>>(RECLAMOS_KEY, {})
-  if (all[id]) {
-    all[id].respuestaAdmin = respuesta
-    all[id].estado = 'revisado'
-    save(RECLAMOS_KEY, all)
-  }
+  if (all[id]) { all[id].respuestaAdmin = respuesta; all[id].estado = 'revisado'; save(RECLAMOS_KEY, all) }
 }
 
 // ═══════════════════════════════════════════════════════════════
-// CHAT 1:1 ENTRE MATCHED USERS
+// CHAT 1:1
 // ═══════════════════════════════════════════════════════════════
 
 function chatKey(panoramaId: string, matchUserId: string): string {
@@ -536,25 +526,15 @@ function chatKey(panoramaId: string, matchUserId: string): string {
 }
 
 export function demoGuardarMensaje(
-  panoramaId: string,
-  matchUserId: string,
-  remitenteUid: string,
-  remitenteNombre: string,
-  contenido: string,
-  tipo: DemoMensajeChat['tipo'] = 'texto'
+  panoramaId: string, matchUserId: string, remitenteUid: string,
+  remitenteNombre: string, contenido: string, tipo: DemoMensajeChat['tipo'] = 'texto'
 ): DemoMensajeChat {
   const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
   const key = chatKey(panoramaId, matchUserId)
   if (!all[key]) all[key] = []
   const msg: DemoMensajeChat = {
-    id: generarId(),
-    matchKey: key,
-    remitenteUid,
-    remitenteNombre,
-    contenido,
-    tipo,
-    leido: false,
-    createdAt: new Date().toISOString(),
+    id: generarId(), matchKey: key, remitenteUid, remitenteNombre,
+    contenido, tipo, leido: false, createdAt: new Date().toISOString(),
   }
   all[key].push(msg)
   save(CHAT_KEY, all)
@@ -564,18 +544,14 @@ export function demoGuardarMensaje(
 export function demoObtenerMensajes(panoramaId: string, matchUserId: string): DemoMensajeChat[] {
   const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
   const key = chatKey(panoramaId, matchUserId)
-  return (all[key] || []).sort((a, b) =>
-    new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-  )
+  return (all[key] || []).sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
 }
 
 export function demoMarcarLeido(panoramaId: string, matchUserId: string, uidLector: string) {
   const all = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
   const key = chatKey(panoramaId, matchUserId)
   if (!all[key]) return
-  all[key] = all[key].map(m =>
-    m.remitenteUid !== uidLector ? { ...m, leido: true } : m
-  )
+  all[key] = all[key].map(m => m.remitenteUid !== uidLector ? { ...m, leido: true } : m)
   save(CHAT_KEY, all)
 }
 
@@ -590,7 +566,7 @@ export function demoContarMensajesNoLeidos(uid: string): number {
   return count
 }
 
-export function demoObtenerResumenChats(uid: string): { panoramaId: string; matchUserId: string; actividad: string; otroNombre: string; noLeidos: number; ultimoMensaje: string; ultimoAt: string }[] {
+export function demoObtenerResumenChats(uid: string) {
   const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
   const allChats = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
   const resumen: any[] = []
@@ -599,7 +575,6 @@ export function demoObtenerResumenChats(uid: string): { panoramaId: string; matc
     const soyDueño = p.uid === uid
     const soySeleccionado = p.seleccionadoId === uid
     if (!soyDueño && !soySeleccionado) continue
-
     const seleccionadoId = p.seleccionadoId
     if (!seleccionadoId) continue
 
@@ -618,17 +593,36 @@ export function demoObtenerResumenChats(uid: string): { panoramaId: string; matc
     }
 
     resumen.push({
-      panoramaId: p.id,
-      matchUserId: seleccionadoId,
-      actividad: p.actividad,
-      otroNombre,
-      noLeidos,
-      ultimoMensaje: ultimo?.contenido || '',
-      ultimoAt: ultimo?.createdAt || p.createdAt,
+      panoramaId: p.id, matchUserId: seleccionadoId, actividad: p.actividad,
+      otroNombre, noLeidos, ultimoMensaje: ultimo?.contenido || '', ultimoAt: ultimo?.createdAt || p.createdAt,
     })
   }
 
   return resumen.sort((a, b) => new Date(b.ultimoAt).getTime() - new Date(a.ultimoAt).getTime())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERFIL PÚBLICO
+// ═══════════════════════════════════════════════════════════════
+
+export function demoObtenerPerfilPublico(uid: string): DemoPerfilPublico | null {
+  const perfil = demoObtenerPerfil(uid)
+  if (!perfil) return null
+  return {
+    compatibilidad: 0,
+    categoriasSel: perfil.categoriasSel,
+    presupuesto: perfil.presupuesto,
+    companiasPref: perfil.companiasPref,
+    nuncaHaria: perfil.nuncaHaria,
+    frecuenciaSocial: perfil.frecuenciaSocial,
+    comunasSel: perfil.comunasSel,
+    disponibilidad: perfil.disponibilidad,
+    temasEntusiasman: perfil.temasEntusiasman,
+    temasEvitar: perfil.temasEvitar,
+    llegarEvento: perfil.llegarEvento,
+    conversar: perfil.conversar,
+    rol: perfil.rol,
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

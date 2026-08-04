@@ -7,7 +7,9 @@ import {
   demoGuardarMensaje,
   demoMarcarLeido,
   demoObtenerUsuario,
+  demoObtenerPerfilPublico,
   type DemoMensajeChat,
+  type DemoPerfilPublico,
 } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,7 +18,9 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   ChevronLeft, Send, Shield, MapPin, Calendar, User,
-  CheckCircle, AlertTriangle, MessageCircle,
+  CheckCircle, AlertTriangle, MessageCircle, Eye,
+  Heart, Wallet, Clock, MapPinned, Ban, Sparkles,
+  MessageSquare
 } from 'lucide-react'
 import NotificacionesBadge from '@/components/NotificacionesBadge'
 
@@ -28,6 +32,10 @@ const SUGERENCIAS = [
   'Perfecto, nos vemos ahí. ¡Llevo mi entrada lista!',
 ]
 
+function previewKey(panoramaId: string, matchUserId: string) {
+  return `preview_seen_${panoramaId}_${matchUserId}`
+}
+
 export default function ChatMatch() {
   const { panoramaId, matchUserId } = useParams<{ panoramaId: string; matchUserId: string }>()
   const { user } = useAuth()
@@ -35,7 +43,9 @@ export default function ChatMatch() {
   const [input, setInput] = useState('')
   const [panorama, setPanorama] = useState<any>(null)
   const [matchInfo, setMatchInfo] = useState<any>(null)
+  const [perfilPublico, setPerfilPublico] = useState<DemoPerfilPublico | null>(null)
   const [checklistCompleto, setChecklistCompleto] = useState(false)
+  const [previewAceptado, setPreviewAceptado] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -54,13 +64,11 @@ export default function ChatMatch() {
       setPanorama(p)
       const esDueño = user.uid === p.uid
       if (esDueño) {
-        // Soy el dueño: el otro es el seleccionado
-        const m = p.matches.find(x => x.matchUserId === matchUserId)
+        const m = p.matches.find((x: any) => x.matchUserId === matchUserId)
         if (m) setMatchInfo(m)
       } else {
-        // Soy el seleccionado: el otro es el dueño
         const dueño = demoObtenerUsuario(p.uid)
-        const miInteres = p.interesados.find(i => i.uid === user.uid)
+        const miInteres = p.interesados.find((i: any) => i.uid === user.uid)
         if (dueño) {
           setMatchInfo({
             matchUserId: p.uid,
@@ -73,9 +81,21 @@ export default function ChatMatch() {
       }
     }
 
+    const yaVio = localStorage.getItem(previewKey(panoramaId, matchUserId)) === 'true'
+    setPreviewAceptado(yaVio)
+
     cargarMensajes()
     demoMarcarLeido(panoramaId, matchUserId, user.uid)
   }, [panoramaId, matchUserId, user])
+
+  useEffect(() => {
+    if (!panorama || !user) return
+    const otroUid = panorama.uid === user.uid ? matchUserId : panorama.uid
+    if (otroUid) {
+      const perfil = demoObtenerPerfilPublico(otroUid)
+      setPerfilPublico(perfil)
+    }
+  }, [panorama, user, matchUserId])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -85,6 +105,12 @@ export default function ChatMatch() {
     if (!panoramaId || !matchUserId) return
     const msgs = demoObtenerMensajes(panoramaId, matchUserId)
     setMensajes(msgs)
+  }
+
+  const aceptarPreview = () => {
+    if (!panoramaId || !matchUserId) return
+    localStorage.setItem(previewKey(panoramaId, matchUserId), 'true')
+    setPreviewAceptado(true)
   }
 
   const handleEnviar = () => {
@@ -128,9 +154,196 @@ export default function ChatMatch() {
     )
   }
 
+  // VISTA PREVIA DEL PERFIL (antes del chat)
+  if (!previewAceptado) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-cyan-50">
+        <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b">
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+            <Link to="/mis-panoramas">
+              <Button variant="ghost" size="sm" className="text-slate-500 -ml-2">
+                <ChevronLeft className="w-4 h-4 mr-1" /> Volver
+              </Button>
+            </Link>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-slate-900">Tu compañero/a de panorama</p>
+            </div>
+            <NotificacionesBadge />
+          </div>
+        </nav>
+
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <Card className="bg-teal-50/50 border-teal-200 mb-6">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-teal-800 mb-1">Panorama</p>
+              <p className="text-lg font-bold text-slate-900">{panorama.actividad}</p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600 mt-2">
+                <span className="flex items-center gap-1"><MapPin className="w-3 h-3 text-teal-500" /> {panorama.lugar}</span>
+                <span className="flex items-center gap-1"><Calendar className="w-3 h-3 text-teal-500" /> {panorama.fecha} {panorama.hora}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="text-center mb-6">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-teal-100 to-cyan-100 flex items-center justify-center mx-auto mb-3">
+              <Eye className="w-8 h-8 text-teal-600" />
+            </div>
+            <h1 className="text-xl font-bold text-slate-900">Así es tu compañero/a</h1>
+            <p className="text-sm text-slate-500">Datos que compartió para ayudarte a decidir. Sin datos personales.</p>
+          </div>
+
+          {perfilPublico ? (
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    <span className="font-medium text-slate-900">Compatibilidad</span>
+                  </div>
+                  <Badge className="bg-teal-100 text-teal-700 text-sm">{matchInfo.compatibilidad}% match</Badge>
+                </CardContent>
+              </Card>
+
+              {perfilPublico.categoriasSel && perfilPublico.categoriasSel.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="w-4 h-4 text-rose-500" />
+                      <span className="font-medium text-slate-900">Le interesa</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {perfilPublico.categoriasSel.map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {perfilPublico.presupuesto && (
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-2">
+                    <Wallet className="w-4 h-4 text-emerald-500" />
+                    <span className="font-medium text-slate-900">Presupuesto:</span>
+                    <span className="text-sm text-slate-600">{perfilPublico.presupuesto}</span>
+                  </CardContent>
+                </Card>
+              )}
+
+              {perfilPublico.companiasPref && (
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-2">
+                    <User className="w-4 h-4 text-purple-500" />
+                    <span className="font-medium text-slate-900">Busca compañía:</span>
+                    <span className="text-sm text-slate-600">{perfilPublico.companiasPref}</span>
+                  </CardContent>
+                </Card>
+              )}
+
+              {perfilPublico.frecuenciaSocial && (
+                <Card>
+                  <CardContent className="p-4 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-blue-500" />
+                    <span className="font-medium text-slate-900">Ritmo social:</span>
+                    <span className="text-sm text-slate-600">{perfilPublico.frecuenciaSocial}</span>
+                  </CardContent>
+                </Card>
+              )}
+
+              {perfilPublico.comunasSel && perfilPublico.comunasSel.length > 0 && (
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <MapPinned className="w-4 h-4 text-orange-500" />
+                      <span className="font-medium text-slate-900">Se mueve en</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {perfilPublico.comunasSel.slice(0, 5).map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
+                      ))}
+                      {perfilPublico.comunasSel.length > 5 && (
+                        <Badge variant="outline" className="text-xs">+{perfilPublico.comunasSel.length - 5}</Badge>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {perfilPublico.nuncaHaria && (
+                <Card className="border-red-200 bg-red-50/30">
+                  <CardContent className="p-4 flex items-start gap-2">
+                    <Ban className="w-4 h-4 text-red-500 mt-0.5" />
+                    <div>
+                      <span className="font-medium text-slate-900">Nunca haría:</span>
+                      <p className="text-sm text-slate-600">{perfilPublico.nuncaHaria}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {(perfilPublico.temasEntusiasman || perfilPublico.temasEvitar) && (
+                <Card>
+                  <CardContent className="p-4 space-y-2">
+                    {perfilPublico.temasEntusiasman && (
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="w-4 h-4 text-green-500 mt-0.5" />
+                        <div>
+                          <span className="font-medium text-slate-900">Le entusiasma hablar de:</span>
+                          <p className="text-sm text-slate-600">{perfilPublico.temasEntusiasman}</p>
+                        </div>
+                      </div>
+                    )}
+                    {perfilPublico.temasEvitar && (
+                      <div className="flex items-start gap-2">
+                        <Ban className="w-4 h-4 text-red-400 mt-0.5" />
+                        <div>
+                          <span className="font-medium text-slate-900">Prefiere evitar:</span>
+                          <p className="text-sm text-slate-600">{perfilPublico.temasEvitar}</p>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          ) : (
+            <Card className="bg-slate-50 border-dashed">
+              <CardContent className="p-6 text-center">
+                <p className="text-sm text-slate-500">Este usuario aún no ha completado su perfil público.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-2">
+              <Shield className="w-4 h-4 text-amber-600 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">Tu seguridad primero</p>
+                <p className="text-xs text-amber-700">
+                  Recuerda: cada uno llega por separado al lugar público de encuentro. 
+                  Comparte tu ubicación con tu contacto de seguridad.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <Button onClick={aceptarPreview} className="w-full bg-teal-600 hover:bg-teal-700 py-5 text-base">
+              <CheckCircle className="w-5 h-5 mr-2" />
+              Entendido — Iniciar chat
+            </Button>
+            <p className="text-xs text-slate-400 text-center mt-2">
+              Al iniciar el chat, confirmas que has revisado estos datos y aceptas las recomendaciones de seguridad.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // CHAT NORMAL (después de aceptar preview)
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* HEADER */}
       <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur border-b">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
           <Link to="/mis-panoramas">
@@ -157,7 +370,6 @@ export default function ChatMatch() {
         </div>
       </nav>
 
-      {/* INFO DEL PANORAMA */}
       <div className="max-w-3xl mx-auto w-full px-4 py-3">
         <Card className="bg-teal-50/50 border-teal-200">
           <CardContent className="p-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-600">
@@ -168,7 +380,6 @@ export default function ChatMatch() {
         </Card>
       </div>
 
-      {/* CHECKLIST DE SEGURIDAD (antes de chat completo) */}
       {!checklistCompleto && (
         <div className="max-w-3xl mx-auto w-full px-4 pb-3">
           <Card className="border-amber-200 bg-amber-50/50">
@@ -212,9 +423,7 @@ export default function ChatMatch() {
         </div>
       )}
 
-      {/* MENSAJES */}
       <div className="flex-1 overflow-y-auto max-w-3xl mx-auto w-full px-4 py-2 space-y-3">
-        {/* Mensaje de sistema inicial */}
         {mensajes.length === 0 && (
           <div className="text-center py-8">
             <MessageCircle className="w-10 h-10 text-slate-200 mx-auto mb-2" />
@@ -224,7 +433,7 @@ export default function ChatMatch() {
         )}
 
         {mensajes.map((msg) => {
-          const esMio = msg.remitenteUid === user.uid
+          const esMio = msg.remitenteUid === user!.uid
           return (
             <div key={msg.id} className={`flex ${esMio ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm ${
@@ -248,7 +457,6 @@ export default function ChatMatch() {
         <div ref={bottomRef} />
       </div>
 
-      {/* SUGERENCIAS */}
       {checklistCompleto && mensajes.length < 3 && (
         <div className="max-w-3xl mx-auto w-full px-4 pb-2">
           <p className="text-[10px] text-slate-400 mb-1.5">Sugerencias de mensajes:</p>
@@ -266,7 +474,6 @@ export default function ChatMatch() {
         </div>
       )}
 
-      {/* INPUT */}
       <div className="sticky bottom-0 bg-white border-t">
         <div className="max-w-3xl mx-auto px-4 py-3 flex gap-2">
           <Input
