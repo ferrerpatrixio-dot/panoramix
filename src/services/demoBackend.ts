@@ -155,6 +155,30 @@ export interface DemoPerfilPublico {
   rol?: string
 }
 
+export interface DemoMetricas {
+  totales: {
+    usuarios: number
+    usuariosActivos: number
+    usuariosInactivos: number
+    panoramas: number
+    panoramasActivos: number
+    panoramasCerrados: number
+    panoramasCompletados: number
+    evaluaciones: number
+    reclamosPendientes: number
+    reclamosRevisados: number
+    mensajes: number
+  }
+  ultimos7Dias: {
+    fecha: string
+    usuarios: number
+    panoramas: number
+  }[]
+  estadosPanorama: { estado: string; cantidad: number }[]
+  distribucionEstrellas: { estrellas: number; cantidad: number }[]
+  topActividades: { actividad: string; cantidad: number }[]
+}
+
 // ═══════════════════════════════════════════════════════════════
 // KEYS
 // ═══════════════════════════════════════════════════════════════
@@ -599,6 +623,78 @@ export function demoObtenerResumenChats(uid: string) {
   }
 
   return resumen.sort((a, b) => new Date(b.ultimoAt).getTime() - new Date(a.ultimoAt).getTime())
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MÉTRICAS
+// ═══════════════════════════════════════════════════════════════
+
+export function demoObtenerMetricas(): DemoMetricas {
+  const users = load<Record<string, { email: string; password: string; displayName?: string; createdAt: string; activo?: boolean }>>(USERS_KEY, {})
+  const panoramas = load<Record<string, DemoPanorama>>(PANORAMAS_KEY, {})
+  const evals = load<Record<string, DemoEvaluacion>>(EVALUACIONES_KEY, {})
+  const reclamos = load<Record<string, DemoReclamo>>(RECLAMOS_KEY, {})
+  const chats = load<Record<string, DemoMensajeChat[]>>(CHAT_KEY, {})
+
+  const allUsers = Object.values(users)
+  const allPanoramas = Object.values(panoramas)
+  const allEvals = Object.values(evals)
+  const allReclamos = Object.values(reclamos)
+  const allMsgs = Object.values(chats).flat()
+
+  const hoy = new Date()
+  const ultimos7Dias: DemoMetricas['ultimos7Dias'] = []
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(hoy)
+    d.setDate(d.getDate() - i)
+    const fechaStr = d.toISOString().split('T')[0]
+    const usuariosDia = allUsers.filter(u => u.createdAt.startsWith(fechaStr)).length
+    const panoramasDia = allPanoramas.filter(p => p.createdAt.startsWith(fechaStr)).length
+    ultimos7Dias.push({ fecha: fechaStr, usuarios: usuariosDia, panoramas: panoramasDia })
+  }
+
+  const estadosMap: Record<string, number> = {}
+  for (const p of allPanoramas) {
+    estadosMap[p.estado] = (estadosMap[p.estado] || 0) + 1
+  }
+  const estadosPanorama = Object.entries(estadosMap).map(([estado, cantidad]) => ({ estado, cantidad }))
+
+  const estrellasMap: Record<number, number> = {}
+  for (const e of allEvals) {
+    estrellasMap[e.estrellas] = (estrellasMap[e.estrellas] || 0) + 1
+  }
+  const distribucionEstrellas = Object.entries(estrellasMap)
+    .map(([estrellas, cantidad]) => ({ estrellas: Number(estrellas), cantidad }))
+    .sort((a, b) => a.estrellas - b.estrellas)
+
+  const actividadesMap: Record<string, number> = {}
+  for (const p of allPanoramas) {
+    actividadesMap[p.actividad] = (actividadesMap[p.actividad] || 0) + 1
+  }
+  const topActividades = Object.entries(actividadesMap)
+    .map(([actividad, cantidad]) => ({ actividad, cantidad }))
+    .sort((a, b) => b.cantidad - a.cantidad)
+    .slice(0, 5)
+
+  return {
+    totales: {
+      usuarios: allUsers.length,
+      usuariosActivos: allUsers.filter(u => u.activo !== false).length,
+      usuariosInactivos: allUsers.filter(u => u.activo === false).length,
+      panoramas: allPanoramas.length,
+      panoramasActivos: allPanoramas.filter(p => p.estado === 'activo').length,
+      panoramasCerrados: allPanoramas.filter(p => p.estado === 'cerrado').length,
+      panoramasCompletados: allPanoramas.filter(p => p.estado === 'completado').length,
+      evaluaciones: allEvals.length,
+      reclamosPendientes: allReclamos.filter(r => r.estado === 'pendiente').length,
+      reclamosRevisados: allReclamos.filter(r => r.estado === 'revisado').length,
+      mensajes: allMsgs.length,
+    },
+    ultimos7Dias,
+    estadosPanorama,
+    distribucionEstrellas,
+    topActividades,
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

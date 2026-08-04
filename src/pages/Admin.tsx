@@ -3,7 +3,8 @@ import { Link } from 'react-router'
 import {
   demoListarUsuarios, demoDesactivarUsuario, demoActivarUsuario,
   demoObtenerEvaluacionesNegativas, demoObtenerReclamos, demoResponderReclamo,
-  demoGuardarReclamo, type DemoUser, type DemoEvaluacion, type DemoReclamo,
+  demoGuardarReclamo, demoObtenerMetricas, type DemoUser, type DemoEvaluacion,
+  type DemoReclamo, type DemoMetricas,
 } from '@/services/demoBackend'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,30 +12,41 @@ import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Users, Shield, Star, AlertTriangle, CheckCircle, UserX,
-  MessageSquare, Clock, Ban, Unlock
+  MessageSquare, Clock, Ban, Unlock, BarChart3, Activity, TrendingUp,
+  MessageCircle, Flag
 } from 'lucide-react'
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Legend,
+} from 'recharts'
+
+const COLORS = ['#0f766e', '#f59e0b', '#ef4444', '#6366f1', '#8b5cf6']
 
 export default function Admin() {
-  const [tab, setTab] = useState<'usuarios' | 'evaluaciones' | 'reclamos'>('usuarios')
+  const [tab, setTab] = useState<'usuarios' | 'evaluaciones' | 'reclamos' | 'metricas'>('usuarios')
   const [usuarios, setUsuarios] = useState<DemoUser[]>([])
   const [evaluaciones, setEvaluaciones] = useState<DemoEvaluacion[]>([])
   const [reclamos, setReclamos] = useState<DemoReclamo[]>([])
+  const [metricas, setMetricas] = useState<DemoMetricas | null>(null)
   const [respuestas, setRespuestas] = useState<Record<string, string>>({})
 
   useEffect(() => {
     setUsuarios(demoListarUsuarios())
     setEvaluaciones(demoObtenerEvaluacionesNegativas())
     setReclamos(demoObtenerReclamos())
+    setMetricas(demoObtenerMetricas())
   }, [tab])
 
   const handleDesactivar = (uid: string) => {
     demoDesactivarUsuario(uid)
     setUsuarios(demoListarUsuarios())
+    setMetricas(demoObtenerMetricas())
   }
 
   const handleActivar = (uid: string) => {
     demoActivarUsuario(uid)
     setUsuarios(demoListarUsuarios())
+    setMetricas(demoObtenerMetricas())
   }
 
   const handleResponder = (id: string) => {
@@ -55,7 +67,22 @@ export default function Admin() {
       estado: 'pendiente',
     })
     setReclamos(demoObtenerReclamos())
+    setMetricas(demoObtenerMetricas())
   }
+
+  const StatCard = ({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: number | string; color: string }) => (
+    <Card>
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white`} style={{ backgroundColor: color }}>
+          {icon}
+        </div>
+        <div>
+          <p className="text-2xl font-bold text-slate-900">{value}</p>
+          <p className="text-xs text-slate-500">{label}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -74,15 +101,16 @@ export default function Admin() {
         {/* HEADER */}
         <div className="mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900">Panel de Administración</h1>
-          <p className="text-slate-500">Gestiona usuarios, evaluaciones negativas y reclamos.</p>
+          <p className="text-slate-500">Gestiona usuarios, evaluaciones negativas, reclamos y métricas.</p>
         </div>
 
         {/* TABS */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {[
             { id: 'usuarios' as const, label: 'Usuarios', icon: <Users className="w-4 h-4" />, count: usuarios.length },
             { id: 'evaluaciones' as const, label: 'Evaluaciones Negativas', icon: <Star className="w-4 h-4" />, count: evaluaciones.length },
             { id: 'reclamos' as const, label: 'Reclamos / Descargos', icon: <AlertTriangle className="w-4 h-4" />, count: reclamos.length },
+            { id: 'metricas' as const, label: 'Métricas', icon: <BarChart3 className="w-4 h-4" />, count: undefined },
           ].map(t => (
             <button
               key={t.id}
@@ -92,7 +120,9 @@ export default function Admin() {
               }`}
             >
               {t.icon} {t.label}
-              <Badge className={tab === t.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}>{t.count}</Badge>
+              {t.count !== undefined && (
+                <Badge className={tab === t.id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}>{t.count}</Badge>
+              )}
             </button>
           ))}
         </div>
@@ -244,6 +274,106 @@ export default function Admin() {
                 </Card>
               ))
             )}
+          </div>
+        )}
+
+        {/* MÉTRICAS */}
+        {tab === 'metricas' && metricas && (
+          <div className="space-y-6">
+            {/* STATS CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard icon={<Users className="w-5 h-5" />} label="Usuarios totales" value={metricas.totales.usuarios} color="#0f766e" />
+              <StatCard icon={<Activity className="w-5 h-5" />} label="Panoramas activos" value={metricas.totales.panoramasActivos} color="#f59e0b" />
+              <StatCard icon={<MessageCircle className="w-5 h-5" />} label="Mensajes" value={metricas.totales.mensajes} color="#6366f1" />
+              <StatCard icon={<Flag className="w-5 h-5" />} label="Reclamos pendientes" value={metricas.totales.reclamosPendientes} color="#ef4444" />
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatCard icon={<TrendingUp className="w-5 h-5" />} label="Evaluaciones" value={metricas.totales.evaluaciones} color="#8b5cf6" />
+              <StatCard icon={<CheckCircle className="w-5 h-5" />} label="Usuarios activos" value={metricas.totales.usuariosActivos} color="#10b981" />
+              <StatCard icon={<Ban className="w-5 h-5" />} label="Usuarios inactivos" value={metricas.totales.usuariosInactivos} color="#6b7280" />
+              <StatCard icon={<Star className="w-5 h-5" />} label="Panoramas cerrados" value={metricas.totales.panoramasCerrados} color="#ec4899" />
+            </div>
+
+            {/* GRÁFICOS */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Actividad últimos 7 días */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Actividad últimos 7 días</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={metricas.ultimos7Dias}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="fecha" tickFormatter={(v: string) => v.slice(5)} />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value: number, name: string) => [value, name === 'usuarios' ? 'Usuarios registrados' : 'Panoramas creados']} />
+                      <Legend />
+                      <Bar dataKey="usuarios" fill="#0f766e" name="Usuarios registrados" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="panoramas" fill="#f59e0b" name="Panoramas creados" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Estados de panoramas */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Estados de panoramas</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={metricas.estadosPanorama}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={90}
+                        paddingAngle={4}
+                        dataKey="cantidad"
+                        nameKey="estado"
+                        label={({ estado, cantidad }) => `${estado}: ${cantidad}`}
+                      >
+                        {metricas.estadosPanorama.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Distribución de estrellas */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Distribución de estrellas</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={metricas.distribucionEstrellas}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="estrellas" />
+                      <YAxis allowDecimals={false} />
+                      <Tooltip formatter={(value: number) => [value, 'Cantidad']} />
+                      <Bar dataKey="cantidad" fill="#8b5cf6" name="Evaluaciones" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Top actividades */}
+              <Card>
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Top actividades</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={metricas.topActividades} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" allowDecimals={false} />
+                      <YAxis dataKey="actividad" type="category" width={120} style={{ fontSize: '12px' }} />
+                      <Tooltip formatter={(value: number) => [value, 'Cantidad']} />
+                      <Bar dataKey="cantidad" fill="#0f766e" name="Panoramas" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>
