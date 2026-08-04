@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 export default function Home() {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<'concierto' | 'perro' | 'cafe'>('concierto')
   const { user, isAdmin, login, register, logout, error: authError } = useAuth()
 
@@ -47,6 +48,7 @@ export default function Home() {
       setRegEmail('')
       setRegPassword('')
       setRegNombre('')
+      navigate('/onboarding')
     } catch {}
   }
 
