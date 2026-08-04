@@ -11,6 +11,7 @@ import MapaOnboarding from './pages/MapaOnboarding'
 import CrearPanorama from './pages/CrearPanorama'
 import FeedPanoramas from './pages/FeedPanoramas'
 import MisPanoramas from './pages/MisPanoramas'
+import MisChats from './pages/MisChats'
 import Evaluacion from './pages/Evaluacion'
 import ChatMatch from './pages/ChatMatch'
 import Admin from './pages/Admin'
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/perfil-profundo" element={<OnboardingGuard><PerfilProfundo /></OnboardingGuard>} />
         <Route path="/crear-panorama" element={<OnboardingGuard><CrearPanorama /></OnboardingGuard>} />
         <Route path="/mis-panoramas" element={<OnboardingGuard><MisPanoramas /></OnboardingGuard>} />
+        <Route path="/mis-chats" element={<OnboardingGuard><MisChats /></OnboardingGuard>} />
         <Route path="/evaluar" element={<OnboardingGuard><Evaluacion /></OnboardingGuard>} />
         <Route path="/chat/:panoramaId/:matchUserId" element={<OnboardingGuard><ChatMatch /></OnboardingGuard>} />
 

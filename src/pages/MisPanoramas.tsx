@@ -89,6 +89,7 @@ export default function MisPanoramas() {
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
             <Link to="/mis-panoramas" className="text-teal-600">Mis Panoramas</Link>
+            <Link to="/mis-chats" className="hover:text-teal-600 transition">Mis Chats</Link>
             <NotificacionesBadge />
           </div>
         </div>

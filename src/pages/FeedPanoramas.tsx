@@ -110,6 +110,7 @@ export default function FeedPanoramas() {
             <Link to="/feed" className="text-teal-600">Descubrir</Link>
             <Link to="/eventos-rm" className="hover:text-teal-600 transition">Eventos RM</Link>
             <Link to="/mis-panoramas" className="hover:text-teal-600 transition">Mis Panoramas</Link>
+            <Link to="/mis-chats" className="hover:text-teal-600 transition">Mis Chats</Link>
             <Link to="/perfil" className="hover:text-teal-600 transition">Mi Perfil</Link>
           </div>
             <NotificacionesBadge />

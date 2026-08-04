@@ -185,6 +185,7 @@ export default function Perfil() {
             <Link to="/perfil" className="text-teal-600">Mi Perfil</Link>
             <Link to="/perfil-profundo" className="hover:text-teal-600 transition">Perfil Profundo</Link>
             <Link to="/mis-panoramas" className="hover:text-teal-600 transition">Mis Panoramas</Link>
+            <Link to="/mis-chats" className="hover:text-teal-600 transition">Mis Chats</Link>
           </div>
         </div>
       </nav>
